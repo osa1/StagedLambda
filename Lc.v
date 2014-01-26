@@ -136,3 +136,36 @@ Inductive step : tm -> nat -> tm -> Prop :=
 | s_fix : forall f x e n e',
     step e (n + 1) e' ->
     step (tfix f x e) (n + 1) (tfix f x e').
+
+Hint Constructors step.
+
+
+Definition example1 := tapp (tabs (Id 0) (tvar (Id 0))) (tnat 42).
+
+Example example1_evaluation :
+  step example1 0 (tnat 42).
+Proof.
+  unfold example1. constructor. constructor.
+Qed.
+
+
+Definition example2 := tunbox (tbox (tnat 42)).
+
+Example example2_evaluation :
+  step example2 1 (tnat 42).
+Proof.
+  unfold example2. auto.
+Qed.
+
+
+Definition example3 := trun (tbox (tnat 42)).
+
+Example example3_evaluation :
+  step example3 0 (tnat 42).
+Proof.
+  unfold example3.
+  remember (tunbox (tbox (tnat 42))) as rhs.
+  assert (step rhs 1 (tnat 42)).
+  Case "proof of assertion". rewrite Heqrhs. apply example2_evaluation.
+  constructor; auto.
+Qed.
