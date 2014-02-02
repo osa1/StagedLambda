@@ -213,7 +213,7 @@ Inductive has_ty : list tyenv -> tm -> ty -> Prop :=
     has_ty (env :: envs) (tvar i) t
 | ty_abs : forall env envs i t1 t2 body,
     has_ty (extend_tyenv i t1 env :: envs) body t2 ->
-    has_ty envs (tabs i body) (tyfun t1 t2)
+    has_ty (env :: envs) (tabs i body) (tyfun t1 t2)
 | ty_fix : forall env envs x f t1 t2 body,
     has_ty (extend_tyenv x t1 (extend_tyenv f (tyfun t1 t2) env) :: envs) body t2 ->
     has_ty envs (tfix f x body) (tyfun t1 t2)
