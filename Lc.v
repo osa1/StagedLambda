@@ -243,6 +243,14 @@ Inductive has_ty : list tyenv -> tm -> ty -> Prop :=
     has_ty envs (trun e) t.
 
 
+Tactic Notation "ty_cases" tactic(first) ident(c) :=
+  first;
+  [ Case_aux c "ty_con" | Case_aux c "ty_var"
+  | Case_aux c "ty_abs" | Case_aux c "ty_fix"
+  | Case_aux c "ty_app" | Case_aux c "ty_box"
+  | Case_aux c "ty_unbox" | Case_aux c "ty_run" ].
+
+
 Definition stuck : tm -> Prop :=
   fun t => forall t', not (step t 0 t').
 
@@ -262,3 +270,74 @@ Proof.
     inversion H1.
 Qed.
 
+
+Theorem progress : forall term type,
+  has_ty [empty_tyenv] term type ->
+  value 0 term \/ exists term', step term 0 term'.
+Proof.
+  intros term type td. remember [empty_tyenv] as envs.
+  ty_cases (induction td) Case; inversion Heqenvs; clear Heqenvs; subst.
+  Case "ty_con". auto.
+  Case "ty_var". right. inversion H.
+  Case "ty_abs". auto.
+  Case "ty_fix". auto.
+  Case "ty_app". right.
+    destruct IHtd1. reflexivity.
+    SCase "tm1 is value".
+      destruct IHtd2. reflexivity.
+      SSCase "tm2 is value".
+        value_cases (inversion H; subst) SSSCase.
+          inversion td1.
+          eauto.
+          eauto.
+          inversion td1.
+          inversion H; subst. inversion H4.
+          eauto.
+          inversion H; subst. inversion H6.
+          eauto.
+          inversion td1.
+          inversion H1.
+          inversion H1.
+      SSCase "tm2 can take a step".
+        inversion H0. exists (tapp tm1 x). auto.
+    SCase "tm1 can take a step".
+      destruct IHtd2. reflexivity.
+      SSCase "tm2 is value". inversion H. eexists (tapp x tm2). auto.
+      SSCase "tm2 can take a step". inversion H. eexists (tapp x tm2). auto.
+  Case "ty_box".
+    (* proving this case is not possible since we're defining well-typedness
+     * as having a type when type environments is [empty_env].
+     * so inductive case of typing rule of ty_box says body of ty_box
+     * should be well-typed in empty type environment, which is not
+     * true, instead we need to type check body of ty_box with an extra
+     * type environment
+     *
+     * I think we need to formulate this theorem in different way ..
+     *)
+    admit.
+  Case "ty_unbox".
+    (* this is also impossible to prove because of similar reasons .. *)
+    admit.
+  Case "ty_run". right.
+    destruct IHtd. reflexivity.
+    SCase "e is value". inversion td; subst.
+      SSCase "e is tvar".
+        (* this is not possible, since we're at level 0,
+         * and variables are not values at level 0 *)
+        inversion H; subst. inversion H2.
+      SSCase "e is tapp".
+        (* not possible since tapps are not values at level 0 *)
+        inversion H; subst. inversion H4.
+      SSCase "e is tbox".
+        inversion H; subst. exists body. apply s_run. assumption.
+        (* TODO: how to show argument of trun is closed??? *) admit.
+        admit.
+      SSCase "e is tunbox".
+        (* unbox is not value at level 0 *)
+        inversion H; subst. inversion H1.
+      SSCase "e is trun".
+        (* run is not a value at level 0 *)
+        exists (trun e0). constructor. inversion H; subst. inversion H2.
+    SCase "e can take a step".
+      inversion H. exists (trun x). auto.
+Qed.
