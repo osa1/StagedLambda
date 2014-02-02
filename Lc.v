@@ -111,8 +111,8 @@ Fixpoint fvs (n : nat) (t : tm) : set id :=
   end.
 
 
-Fixpoint closed (n : nat) (t : tm) : bool :=
-  beq_nat (length (fvs n t)) 0.
+Fixpoint closed (n : nat) (t : tm) : Prop :=
+  fvs n t = empty_set id.
 
 
 Inductive step : tm -> nat -> tm -> Prop :=
@@ -137,7 +137,7 @@ Inductive step : tm -> nat -> tm -> Prop :=
     step (trun e) n (trun e')
 | s_run : forall v,
     value 1 v ->
-    closed 0 v = true ->
+    closed 0 v ->
     step (trun (tbox v)) 0 v
 | s_unb1 : forall e n e',
     step e n e' ->
@@ -192,7 +192,8 @@ Proof.
   remember (tunbox (tbox (tnat 42))) as rhs.
   assert (step rhs 1 (tnat 42)).
   Case "proof of assertion". rewrite Heqrhs. apply example2_evaluation.
-  constructor; auto.
+  constructor. auto.
+  unfold closed. simpl. reflexivity.
 Qed.
 
 (* types ***********************************************************)
