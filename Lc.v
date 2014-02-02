@@ -14,6 +14,8 @@ Inductive tm :=
 | tunbox : tm -> tm
 | trun : tm -> tm.
 
+(* TODO: maybe add lift *)
+
 
 Tactic Notation "tm_cases" tactic(first) ident(c) :=
   first;
