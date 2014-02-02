@@ -142,6 +142,16 @@ Inductive step : tm -> nat -> tm -> Prop :=
 Hint Constructors step.
 
 
+Tactic Notation "step_cases" tactic(first) ident(c) :=
+  first;
+  [ Case_aux c "s_app1" | Case_aux c "s_app2"
+  | Case_aux c "s_appabs" | Case_aux c "s_appfix"
+  | Case_aux c "s_box" | Case_aux c "s_run1"
+  | Case_aux c "s_run" | Case_aux c "s_unb1"
+  | Case_aux c "s_unb" | Case_aux c "s_abs"
+  | Case_aux c "s_fix" ].
+
+
 Definition example1 := tapp (tabs (Id 0) (tvar (Id 0))) (tnat 42).
 
 Example example1_evaluation :
