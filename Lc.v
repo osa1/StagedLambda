@@ -48,12 +48,22 @@ Inductive value : nat -> tm -> Prop :=
     n > 0 -> value n v -> value n (tfix f x v)
 | vbox_n : forall n v,
     n > 0 -> value n v -> value (n+1) (tbox v)
-| unbox_n : forall n v,
+| vunbox_n : forall n v,
     n > 1 -> value (n-1) v -> value n (tunbox v)
-| run_n : forall n v,
+| vrun_n : forall n v,
     n > 0 -> value n v -> value n (trun v).
 
 Hint Constructors value.
+
+
+Tactic Notation "value_cases" tactic(first) ident(c) :=
+  first;
+  [ Case_aux c "vnat" | Case_aux c "vabs_0"
+  | Case_aux c "vfix_0" | Case_aux c "vbox_0"
+  | Case_aux c "vvar_n" | Case_aux c "vabs_n"
+  | Case_aux c "vapp_n" | Case_aux c "vfix_n"
+  | Case_aux c "vbox_n" | Case_aux c "vunbox_n"
+  | Case_aux c "vrun_n" ].
 
 
 Reserved Notation "'[' x ':=' s ']' t" (at level 20).
