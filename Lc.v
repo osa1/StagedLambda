@@ -3,6 +3,9 @@ Require Export SfLib.
 Require Import Coq.Lists.ListSet.
 Require Import List. Open Scope list_scope.
 
+(* We're using functions as type environments, so this is needed
+ * to prove equality of environments *)
+Require Import FunctionalExtensionality.
 
 Inductive tm :=
 | tnat : nat -> tm
@@ -181,3 +184,70 @@ Proof.
   Case "proof of assertion". rewrite Heqrhs. apply example2_evaluation.
   constructor; auto.
 Qed.
+
+(* types ***********************************************************)
+
+Inductive ty :=
+| tynat : ty
+| tyfun : ty -> ty -> ty
+| tybox : (id -> option ty) -> ty -> ty.
+
+Definition tyenv := id -> option ty.
+
+Definition empty_tyenv : tyenv := fun _ => None.
+
+Definition extend_tyenv : id -> ty -> tyenv -> tyenv :=
+  fun i t e => fun i' => if eq_id_dec i i'
+                         then Some t
+                         else e i.
+
+Definition singleton_env : id -> ty -> tyenv :=
+  fun i t => extend_tyenv i t empty_tyenv.
+
+
+Inductive has_ty : list tyenv -> tm -> ty -> Prop :=
+| ty_con : forall envs n,
+    has_ty envs (tnat n) tynat
+| ty_var : forall env envs i t,
+    env i = Some t ->
+    has_ty (env :: envs) (tvar i) t
+| ty_abs : forall env envs i t1 t2 body,
+    has_ty (extend_tyenv i t1 env :: envs) body t2 ->
+    has_ty envs (tabs i body) (tyfun t1 t2)
+| ty_fix : forall env envs x f t1 t2 body,
+    has_ty (extend_tyenv x t1 (extend_tyenv f (tyfun t1 t2) env) :: envs) body t2 ->
+    has_ty envs (tfix f x body) (tyfun t1 t2)
+| ty_app : forall envs tm1 tm2 t1 t2,
+    has_ty envs tm1 (tyfun t1 t2) ->
+    has_ty envs tm2 t1 ->
+    has_ty envs (tapp tm1 tm2) t2
+| ty_box : forall box_env envs body t,
+    has_ty (box_env :: envs) body t ->
+    has_ty envs (tbox body) (tybox box_env t)
+| ty_unbox : forall box_env envs e t,
+    has_ty envs e (tybox box_env t) ->
+    has_ty (box_env :: envs) (tunbox e) t
+| ty_run : forall envs e t,
+    has_ty envs e (tybox empty_tyenv t) ->
+    has_ty envs (trun e) t.
+
+
+Definition stuck : tm -> Prop :=
+  fun t => forall t', not (step t 0 t').
+
+Example example_stuck1 : stuck (tapp (tnat 1) (tnat 2)).
+Proof.
+  unfold stuck. unfold not. intros t'.
+  remember (tnat 1) as t1. remember (tnat 2) as t2. remember (tapp t1 t2) as tapp.
+  intros eval. 
+  step_cases (induction eval) Case; inversion Heqtapp; clear Heqtapp; subst.
+  Case "s_app1".
+    apply IHeval. reflexivity. reflexivity. inversion eval.
+  Case "s_app2".
+    apply IHeval. reflexivity. reflexivity. inversion eval.
+  Case "s_appabs".
+    inversion H1.
+  Case "s_appfix".
+    inversion H1.
+Qed.
+
