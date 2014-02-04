@@ -271,6 +271,38 @@ Proof.
 Qed.
 
 
+Inductive tm_lvl : tm -> nat -> Prop :=
+| l_nat : (* nats are terms at all levels *)
+    forall n l,
+    tm_lvl (tnat n) l
+| l_var : (* variables are terms at all levels *)
+    forall i l,
+    tm_lvl (tvar i) l
+| l_abs :
+    forall i body l,
+    tm_lvl body l -> tm_lvl (tabs i body) l
+| l_app :
+    forall t1 t2 l,
+    tm_lvl t1 l -> tm_lvl t2 l -> tm_lvl (tapp t1 t2) l
+| l_fix :
+    forall i1 i2 body l,
+    tm_lvl body l -> tm_lvl (tfix i1 i2 body) l
+| l_box :
+    forall body l,
+    tm_lvl body (l + 1) -> tm_lvl (tbox body) l
+| l_unbox :
+    forall body l,
+    tm_lvl body l -> tm_lvl (tunbox body) (l + 1)
+| l_run :
+    forall body l,
+    tm_lvl body l -> tm_lvl (trun body) l
+
+(* a term at level l is also a term at level l + 1 *)
+| l_inc :
+    forall t l,
+    tm_lvl t l -> tm_lvl t (l + 1).
+
+
 Theorem progress : forall term type,
   has_ty [empty_tyenv] term type ->
   value 0 term \/ exists term', step term 0 term'.
