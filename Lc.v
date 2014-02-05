@@ -7,6 +7,7 @@ Require Import List. Open Scope list_scope.
  * to prove equality of environments *)
 Require Import FunctionalExtensionality.
 
+
 Inductive tm :=
 | tnat : nat -> tm
 | tvar : id -> tm
@@ -28,13 +29,44 @@ Tactic Notation "tm_cases" tactic(first) ident(c) :=
   | Case_aux c "tunbox" | Case_aux c "trun" ].
 
 
+Inductive tm_lvl : tm -> nat -> Prop :=
+| l_nat : (* nats are terms at all levels *)
+    forall n l,
+    tm_lvl (tnat n) l
+| l_var : (* variables are terms at all levels *)
+    forall i l,
+    tm_lvl (tvar i) l
+| l_abs : forall i body l,
+    tm_lvl body l -> tm_lvl (tabs i body) l
+| l_app : forall t1 t2 l,
+    tm_lvl t1 l -> tm_lvl t2 l -> tm_lvl (tapp t1 t2) l
+| l_fix : forall i1 i2 body l,
+    tm_lvl body l -> tm_lvl (tfix i1 i2 body) l
+| l_box : forall body l,
+    tm_lvl body (l + 1) -> tm_lvl (tbox body) l
+| l_unbox : forall body l,
+    tm_lvl body l -> tm_lvl (tunbox body) (l + 1)
+| l_run : forall body l,
+    tm_lvl body l -> tm_lvl (trun body) l.
+
+Hint Constructors tm_lvl.
+
+
+Lemma tm_lvl_inc :
+  forall term lvl, tm_lvl term lvl -> tm_lvl term (lvl + 1).
+Proof.
+  intros term.
+  tm_cases (induction term) Case; intros lvl td; inversion td; subst; auto.
+Qed.
+
+
 Inductive value : nat -> tm -> Prop :=
 (* nats are values in all stages *)
 | vnat : forall n l, value l (tnat n)
 
 (* stage 0 values *)
-| vabs_0 : forall v t, value 0 (tabs v t)
-| vfix_0 : forall i1 i2 t, value 0 (tfix i1 i2 t)
+| vabs_0 : forall v t, tm_lvl t 0 -> value 0 (tabs v t)
+| vfix_0 : forall i1 i2 t, tm_lvl t 0 -> value 0 (tfix i1 i2 t)
 | vbox_0 : forall v, value 1 v -> value 0 (tbox v)
 
 (* stage n > 0 values *)
@@ -47,7 +79,7 @@ Inductive value : nat -> tm -> Prop :=
 | vfix_n : forall f x v n,
     n > 0 -> value n v -> value n (tfix f x v)
 | vbox_n : forall n v,
-    n > 0 -> value n v -> value (n+1) (tbox v)
+    n > 0 -> value (n+1) v -> value n (tbox v)
 | vunbox_n : forall n v,
     n > 1 -> value (n-1) v -> value n (tunbox v)
 | vrun_n : forall n v,
@@ -66,7 +98,34 @@ Tactic Notation "value_cases" tactic(first) ident(c) :=
   | Case_aux c "vrun_n" ].
 
 
+Lemma values_are_terms :
+  forall term lvl, value lvl term -> tm_lvl term lvl.
+Proof.
+  intros term. tm_cases (induction term) Case; auto.
+  Case "tabs". intros lvl vd.
+    destruct lvl.
+    SCase "lvl = 0". apply l_abs. inversion vd; subst; auto.
+    SCase "lvl = n + 1". apply l_abs. inversion vd; subst; auto.
+  Case "tapp". intros. inversion H; subst; auto.
+  Case "tfix". intros lvl vd.
+    destruct lvl.
+    SCase "lvl = 0". apply l_fix. inversion vd; subst; auto.
+    SCase "lvl = n + 1". apply l_fix. inversion vd; subst; auto.
+  Case "tbox". intros. apply l_box. inversion H; subst; auto.
+  Case "tunbox". intros.
+    destruct lvl.
+    inversion H; subst. inversion H1.
+    assert (S lvl = lvl + 1). omega.
+    rewrite H0. apply l_unbox. apply IHterm. inversion H; subst. simpl in H4.
+      assert (lvl - 0 = lvl). omega.
+      rewrite H1 in H4. apply H4.
+  Case "trun".
+    intros. inversion H; subst; auto.
+Qed.
+
+
 Reserved Notation "'[' x ':=' s ']' t" (at level 20).
+
 
 Fixpoint subst (x : id) (s : tm) (t : tm) : tm :=
   match t with
@@ -196,7 +255,7 @@ Proof.
   unfold closed. simpl. reflexivity.
 Qed.
 
-(* types ***********************************************************)
+
 
 Inductive ty :=
 | tynat : ty
@@ -254,11 +313,12 @@ Tactic Notation "ty_cases" tactic(first) ident(c) :=
 Definition stuck : tm -> Prop :=
   fun t => forall t', not (step t 0 t').
 
+
 Example example_stuck1 : stuck (tapp (tnat 1) (tnat 2)).
 Proof.
   unfold stuck. unfold not. intros t'.
   remember (tnat 1) as t1. remember (tnat 2) as t2. remember (tapp t1 t2) as tapp.
-  intros eval. 
+  intros eval.
   step_cases (induction eval) Case; inversion Heqtapp; clear Heqtapp; subst.
   Case "s_app1".
     apply IHeval. reflexivity. reflexivity. inversion eval.
@@ -271,105 +331,11 @@ Proof.
 Qed.
 
 
-Inductive tm_lvl : tm -> nat -> Prop :=
-| l_nat : (* nats are terms at all levels *)
-    forall n l,
-    tm_lvl (tnat n) l
-| l_var : (* variables are terms at all levels *)
-    forall i l,
-    tm_lvl (tvar i) l
-| l_abs :
-    forall i body l,
-    tm_lvl body l -> tm_lvl (tabs i body) l
-| l_app :
-    forall t1 t2 l,
-    tm_lvl t1 l -> tm_lvl t2 l -> tm_lvl (tapp t1 t2) l
-| l_fix :
-    forall i1 i2 body l,
-    tm_lvl body l -> tm_lvl (tfix i1 i2 body) l
-| l_box :
-    forall body l,
-    tm_lvl body (l + 1) -> tm_lvl (tbox body) l
-| l_unbox :
-    forall body l,
-    tm_lvl body l -> tm_lvl (tunbox body) (l + 1)
-| l_run :
-    forall body l,
-    tm_lvl body l -> tm_lvl (trun body) l
 
-(* a term at level l is also a term at level l + 1 *)
-| l_inc :
-    forall t l,
-    tm_lvl t l -> tm_lvl t (l + 1).
-
-
-Theorem progress : forall term type,
-  has_ty [empty_tyenv] term type ->
-  value 0 term \/ exists term', step term 0 term'.
-Proof.
-  intros term type td. remember [empty_tyenv] as envs.
-  ty_cases (induction td) Case; inversion Heqenvs; clear Heqenvs; subst.
-  Case "ty_con". auto.
-  Case "ty_var". right. inversion H.
-  Case "ty_abs". auto.
-  Case "ty_fix". auto.
-  Case "ty_app". right.
-    destruct IHtd1. reflexivity.
-    SCase "tm1 is value".
-      destruct IHtd2. reflexivity.
-      SSCase "tm2 is value".
-        value_cases (inversion H; subst) SSSCase.
-          inversion td1.
-          eauto.
-          eauto.
-          inversion td1.
-          inversion H; subst. inversion H4.
-          eauto.
-          inversion H; subst. inversion H6.
-          eauto.
-          inversion td1.
-          inversion H1.
-          inversion H1.
-      SSCase "tm2 can take a step".
-        inversion H0. exists (tapp tm1 x). auto.
-    SCase "tm1 can take a step".
-      destruct IHtd2. reflexivity.
-      SSCase "tm2 is value". inversion H. eexists (tapp x tm2). auto.
-      SSCase "tm2 can take a step". inversion H. eexists (tapp x tm2). auto.
-  Case "ty_box".
-    (* proving this case is not possible since we're defining well-typedness
-     * as having a type when type environments is [empty_env].
-     * so inductive case of typing rule of ty_box says body of ty_box
-     * should be well-typed in empty type environment, which is not
-     * true, instead we need to type check body of ty_box with an extra
-     * type environment
-     *
-     * I think we need to formulate this theorem in different way ..
-     *)
-    admit.
-  Case "ty_unbox".
-    (* this is also impossible to prove because of similar reasons .. *)
-    admit.
-  Case "ty_run". right.
-    destruct IHtd. reflexivity.
-    SCase "e is value". inversion td; subst.
-      SSCase "e is tvar".
-        (* this is not possible, since we're at level 0,
-         * and variables are not values at level 0 *)
-        inversion H; subst. inversion H2.
-      SSCase "e is tapp".
-        (* not possible since tapps are not values at level 0 *)
-        inversion H; subst. inversion H4.
-      SSCase "e is tbox".
-        inversion H; subst. exists body. apply s_run. assumption.
-        (* TODO: how to show argument of trun is closed??? *) admit.
-        admit.
-      SSCase "e is tunbox".
-        (* unbox is not value at level 0 *)
-        inversion H; subst. inversion H1.
-      SSCase "e is trun".
-        (* run is not a value at level 0 *)
-        exists (trun e0). constructor. inversion H; subst. inversion H2.
-    SCase "e can take a step".
-      inversion H. exists (trun x). auto.
-Qed.
+Theorem progress : forall term tau n envs,
+  tm_lvl term n ->
+  has_ty envs term tau ->
+  length envs = n + 1 ->
+  closed n term ->
+  value n term \/ exists term', step term n term'.
+Proof. Admitted.
