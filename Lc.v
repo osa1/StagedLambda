@@ -156,16 +156,22 @@ Fixpoint fvs (n : nat) (t : tm) : set id :=
       | tnat _ => nil
       | tvar i => i :: nil
       | tabs i t' => set_remove eq_id_dec i (fvs n t')
-      | tapp t1 t2 => set_union eq_id_dec (fvs n t1) (fvs n t2)
       | tfix i1 i2 t' => set_remove eq_id_dec i1 (set_remove eq_id_dec i2 (fvs n t'))
+      | tapp t1 t2 => set_union eq_id_dec (fvs n t1) (fvs n t2)
       | tbox t' => fvs (n + 1) t'
-      | tunbox t' => fvs n t' (* I think this case should not happen *)
+      | tunbox t' => fvs n t'
       | trun t' => fvs n t'
       end
   | n =>
       match t with
-      | tunbox t' => fvs (n-1) t'
-      | _ => nil
+      | tnat _ => nil
+      | tvar _ => nil
+      | tabs _ t'
+      | tfix _ _ t' => fvs n t'
+      | tapp t1 t2 => set_union eq_id_dec (fvs n t1) (fvs n t2)
+      | tbox t' => fvs (n + 1) t'
+      | tunbox t' => fvs (n - 1) t'
+      | trun t' => fvs n t'
       end
   end.
 
