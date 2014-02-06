@@ -124,29 +124,39 @@ Proof.
 Qed.
 
 
-Reserved Notation "'[' x ':=' s ']' t" (at level 20).
-
-
-Fixpoint subst (x : id) (s : tm) (t : tm) : tm :=
-  match t with
-  | tnat _ => t
-  | tvar v => if eq_id_dec v x then s else t
-  | tabs v t' => if eq_id_dec v x
-                 then t
-                 else tabs v ([x:=s] t')
-  | tapp t1 t2 => tapp ([x:=s] t1) ([x:=s] t2)
-  | tfix f v t' =>
-      if eq_id_dec f x
-      then t
-      else if eq_id_dec v x
-           then t
-           else tfix f v ([x:=s] t')
-  | tbox t' => tbox ([x:=s] t')
-  | tunbox t' => tunbox ([x:=s] t')
-  | trun t' => trun ([x:=s] t')
-  end
-
-where "'[' x ':=' s ']' t" := (subst x s t).
+Fixpoint subst (x : id) (s : tm) (n : nat) (t : tm) : tm :=
+  match n with
+  | 0 =>
+      match t with
+      | tnat _ => t
+      | tvar v => if eq_id_dec v x then s else t
+      | tabs v t' =>
+          if eq_id_dec v x
+          then t
+          else tabs v (subst x s n t')
+      | tfix f v t' =>
+          if eq_id_dec f x
+          then t
+          else if eq_id_dec v x
+               then t
+               else tfix f v (subst x s n t')
+      | tapp t1 t2 => tapp (subst x s n t1) (subst x s n t2)
+      | tbox t' => tbox (subst x s (n+1) t')
+      | tunbox _ => t (* unreachable case *)
+      | trun t' => trun (subst x s n t')
+      end
+  | n =>
+      match t with
+      | tnat _
+      | tvar _ => t
+      | tabs v t' => tabs v (subst x s n t')
+      | tfix f v t' => tfix f v (subst x s n t')
+      | tapp t1 t2 => tapp (subst x s n t1) (subst x s n t2)
+      | tbox t' => tbox (subst x s (n+1) t')
+      | tunbox t' => tunbox (subst x s (n-1) t')
+      | trun t' => trun (subst x s n t')
+      end
+  end.
 
 
 Fixpoint fvs (n : nat) (t : tm) : set id :=
@@ -190,10 +200,10 @@ Inductive step : tm -> nat -> tm -> Prop :=
     step (tapp v e) n (tapp v e')
 | s_appabs : forall x e v,
     value 0 v ->
-    step (tapp (tabs x e) v) 0 ([x:=v] e)
+    step (tapp (tabs x e) v) 0 (subst x v 0 e)
 | s_appfix : forall f x e v,
     value 0 v ->
-    step (tapp (tfix f x e) v) 0 ([x:=v] ([f:=tfix f x e] e))
+    step (tapp (tfix f x e) v) 0 (subst x v 0 (subst f (tfix f x e) 0 e))
 | s_box : forall e n e',
     step e (n + 1) e' ->
     step (tbox e) n (tbox e')
