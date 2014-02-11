@@ -298,8 +298,8 @@ Inductive has_ty : list tyenv -> tm -> ty -> Prop :=
     has_ty (extend_tyenv i t1 env :: envs) body t2 ->
     has_ty (env :: envs) (tabs i body) (tyfun t1 t2)
 | ty_fix : forall env envs x f t1 t2 body,
-    has_ty (extend_tyenv x t1 (extend_tyenv f (tyfun t1 t2) env) :: envs) body t2 ->
-    has_ty envs (tfix f x body) (tyfun t1 t2)
+    has_ty ((extend_tyenv x t1 (extend_tyenv f (tyfun t1 t2) env)) :: envs) body t2 ->
+    has_ty (env :: envs) (tfix f x body) (tyfun t1 t2)
 | ty_app : forall envs tm1 tm2 t1 t2,
     has_ty envs tm1 (tyfun t1 t2) ->
     has_ty envs tm2 t1 ->
@@ -368,7 +368,14 @@ Proof.
       SSCase "body can take a step at level (S n')".
         right. inversion H0; subst. exists (tabs i x).  apply s_abs. auto.
 
-  Case "ty_fix". admit. (* should be same as ty_abs *)
+  Case "ty_fix". intro n. destruct n as [|n'].
+    SCase "n = 0". left. apply vfix_0. inversion tlvld; subst. auto.
+    SCase "n = n' + 1". intros. destruct (IHtd (S n')); auto.
+      inversion tlvld; subst; auto.
+      SSCase "body is a value at level (S n')".
+        left. apply vfix_n. omega. auto.
+      SSCase "body can take a step at level (S n')".
+        right. inversion H0; subst. exists (tfix f x x0). apply s_fix. auto.
 
   Case "ty_app". admit. (* should be trivial once we implement fresh variables in subst function *)
 
