@@ -43,9 +43,9 @@ Inductive tm_lvl : tm -> nat -> Prop :=
 | l_fix : forall i1 i2 body l,
     tm_lvl body l -> tm_lvl (tfix i1 i2 body) l
 | l_box : forall body l,
-    tm_lvl body (l + 1) -> tm_lvl (tbox body) l
+    tm_lvl body (1 + l) -> tm_lvl (tbox body) l
 | l_unbox : forall body l,
-    tm_lvl body l -> tm_lvl (tunbox body) (l + 1)
+    tm_lvl body l -> tm_lvl (tunbox body) (1 + l)
 | l_run : forall body l,
     tm_lvl body l -> tm_lvl (trun body) l.
 
@@ -53,7 +53,7 @@ Hint Constructors tm_lvl.
 
 
 Lemma tm_lvl_inc :
-  forall term lvl, tm_lvl term lvl -> tm_lvl term (lvl + 1).
+  forall term lvl, tm_lvl term lvl -> tm_lvl term (1 + lvl).
 Proof.
   intros term.
   tm_cases (induction term) Case; intros lvl td; inversion td; subst; auto.
@@ -79,7 +79,7 @@ Inductive value : nat -> tm -> Prop :=
 | vfix_n : forall f x v n,
     n > 0 -> value n v -> value n (tfix f x v)
 | vbox_n : forall n v,
-    n > 0 -> value (n+1) v -> value n (tbox v)
+    n > 0 -> value (1+n) v -> value n (tbox v)
 | vunbox_n : forall n v,
     n > 1 -> value (n-1) v -> value n (tunbox v)
 | vrun_n : forall n v,
@@ -115,10 +115,7 @@ Proof.
   Case "tunbox". intros.
     destruct lvl.
     inversion H; subst. inversion H1.
-    assert (S lvl = lvl + 1). omega.
-    rewrite H0. apply l_unbox. apply IHterm. inversion H; subst. simpl in H4.
-      assert (lvl - 0 = lvl). omega.
-      rewrite H1 in H4. apply H4.
+    apply l_unbox. apply IHterm. inversion H; subst. simpl in H3. rewrite <- minus_n_O in H3. auto.
   Case "trun".
     intros. inversion H; subst; auto.
 Qed.
@@ -141,7 +138,7 @@ Fixpoint subst (x : id) (s : tm) (n : nat) (t : tm) : tm :=
                then t
                else tfix f v (subst x s n t')
       | tapp t1 t2 => tapp (subst x s n t1) (subst x s n t2)
-      | tbox t' => tbox (subst x s (n+1) t')
+      | tbox t' => tbox (subst x s (1+n) t')
       | tunbox _ => t (* unreachable case *)
       | trun t' => trun (subst x s n t')
       end
@@ -152,7 +149,7 @@ Fixpoint subst (x : id) (s : tm) (n : nat) (t : tm) : tm :=
       | tabs v t' => tabs v (subst x s n t')
       | tfix f v t' => tfix f v (subst x s n t')
       | tapp t1 t2 => tapp (subst x s n t1) (subst x s n t2)
-      | tbox t' => tbox (subst x s (n+1) t')
+      | tbox t' => tbox (subst x s (1+n) t')
       | tunbox t' => tunbox (subst x s (n-1) t')
       | trun t' => trun (subst x s n t')
       end
@@ -168,7 +165,7 @@ Fixpoint fvs (n : nat) (t : tm) : set id :=
       | tabs i t' => set_remove eq_id_dec i (fvs n t')
       | tfix i1 i2 t' => set_remove eq_id_dec i1 (set_remove eq_id_dec i2 (fvs n t'))
       | tapp t1 t2 => set_union eq_id_dec (fvs n t1) (fvs n t2)
-      | tbox t' => fvs (n + 1) t'
+      | tbox t' => fvs (1 + n) t'
       | tunbox t' => fvs n t'
       | trun t' => fvs n t'
       end
@@ -179,7 +176,7 @@ Fixpoint fvs (n : nat) (t : tm) : set id :=
       | tabs _ t'
       | tfix _ _ t' => fvs n t'
       | tapp t1 t2 => set_union eq_id_dec (fvs n t1) (fvs n t2)
-      | tbox t' => fvs (n + 1) t'
+      | tbox t' => fvs (1 + n) t'
       | tunbox t' => fvs (n - 1) t'
       | trun t' => fvs n t'
       end
@@ -205,7 +202,7 @@ Inductive step : tm -> nat -> tm -> Prop :=
     value 0 v ->
     step (tapp (tfix f x e) v) 0 (subst x v 0 (subst f (tfix f x e) 0 e))
 | s_box : forall e n e',
-    step e (n + 1) e' ->
+    step e (1 + n) e' ->
     step (tbox e) n (tbox e')
 | s_run1 : forall e n e',
     step e n e' ->
@@ -216,16 +213,16 @@ Inductive step : tm -> nat -> tm -> Prop :=
     step (trun (tbox v)) 0 v
 | s_unb1 : forall e n e',
     step e n e' ->
-    step (tunbox e) (n + 1) (tunbox e')
+    step (tunbox e) (1 + n) (tunbox e')
 | s_unb : forall v,
     value 1 v ->
     step (tunbox (tbox v)) 1 v
 | s_abs : forall x e n e',
-    step e (n + 1) e' ->
-    step (tabs x e) (n + 1) (tabs x e')
+    step e (1 + n) e' ->
+    step (tabs x e) (1 + n) (tabs x e')
 | s_fix : forall f x e n e',
-    step e (n + 1) e' ->
-    step (tfix f x e) (n + 1) (tfix f x e').
+    step e (1 + n) e' ->
+    step (tfix f x e) (1 + n) (tfix f x e').
 
 Hint Constructors step.
 
@@ -347,11 +344,10 @@ Proof.
 Qed.
 
 
-
 Theorem progress : forall term tau n envs,
   tm_lvl term n ->
   has_ty envs term tau ->
-  length envs = n + 1 ->
+  length envs = 1 + n ->
   closed n term ->
   value n term \/ exists term', step term n term'.
 Proof.
@@ -370,9 +366,7 @@ Proof.
       SSCase "body is a value at level (S n')".
         left. apply vabs_n. omega. auto.
       SSCase "body can take a step at level (S n')".
-        right. inversion H0; subst. exists (tabs i x).
-        assert (S n' = n' + 1). omega. rewrite H2.
-        apply s_abs. rewrite <- H2. auto.
+        right. inversion H0; subst. exists (tabs i x).  apply s_abs. auto.
 
   Case "ty_fix". admit. (* should be same as ty_abs *)
 
@@ -382,15 +376,11 @@ Proof.
     SCase "n = 0". simpl. destruct (IHtd 1); auto. inversion tlvld; subst; auto. simpl. rewrite envsd. reflexivity.
       SSCase "body can take a step at level 1". right. inversion H0; subst. exists (tbox x). auto.
     SCase "n = n' + 1".
-      assert (S n' + 1 = n' + 2) as Hboring. omega.
-      destruct (IHtd (n' + 2)); auto. inversion tlvld; subst.
-      rewrite <- Hboring. auto.
-      simpl. rewrite envsd. omega.
-      inversion H; subst. unfold closed. rewrite <- Hboring. auto.
-      SSCase "body is value at level n + 1". left. apply vbox_n. omega.
-        assert (S n' + 1 = n' + 2) as Hboring'. omega. rewrite Hboring'. auto.
+      destruct (IHtd (2 + n')); auto. inversion tlvld; subst. auto.
+      simpl. simpl in envsd. rewrite envsd. auto.
+      SSCase "body is value at level n + 1". left. apply vbox_n. omega. auto.
       SSCase "body can take a step at level n + 1". right.
-        inversion H0; subst. exists (tbox x). apply s_box. rewrite Hboring. auto.
+        inversion H0; subst. exists (tbox x). apply s_box. auto.
 
   Case "ty_unbox". admit. (* postponing for now ... *)
 
@@ -407,12 +397,8 @@ Proof.
 
       SSCase "body can take a step at level 0". inversion H0; subst. exists (trun x). auto.
     SCase "n = n' + 1". intros.
-      assert (S n' = n' + 1) as Hboring. omega.
-      destruct (IHtd (n' + 1)); auto. inversion tlvld; subst.
-        rewrite Hboring in H1. auto.
-        rewrite envsd. omega.
-        inversion H; subst.  rewrite <- Hboring. auto.
-      SSCase "body is value at level n + 1". left. apply vrun_n. omega. rewrite Hboring. auto.
+      destruct (IHtd (1 + n')); auto. inversion tlvld; subst; auto.
+      SSCase "body is value at level n + 1". left. apply vrun_n. omega. auto.
       SSCase "body can take a step at level n + 1". right.
-        inversion H0; subst. exists (trun x). apply s_run1. rewrite Hboring. auto.
+        inversion H0; subst. exists (trun x). apply s_run1. auto.
 Qed.
