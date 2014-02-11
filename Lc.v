@@ -354,4 +354,65 @@ Theorem progress : forall term tau n envs,
   length envs = n + 1 ->
   closed n term ->
   value n term \/ exists term', step term n term'.
-Proof. Admitted.
+Proof.
+  intros term tau n envs. intros tlvld td envsd. generalize dependent n. ty_cases (induction td) Case.
+
+  Case "ty_con". auto.
+
+  Case "ty_var". intros n td ld c. destruct n as [|n'].
+    SCase "n = 0". simpl in c. inversion c.
+    SCase "n = n' + 1". left. apply vvar_n. omega.
+
+  Case "ty_abs". intro n. destruct n as [|n'].
+    SCase "n = 0". left. apply vabs_0. inversion tlvld; subst. auto.
+    SCase "n = n' + 1". intros. destruct (IHtd (S n')); auto.
+      inversion tlvld; subst; auto.
+      SSCase "body is a value at level (S n')".
+        left. apply vabs_n. omega. auto.
+      SSCase "body can take a step at level (S n')".
+        right. inversion H0; subst. exists (tabs i x).
+        assert (S n' = n' + 1). omega. rewrite H2.
+        apply s_abs. rewrite <- H2. auto.
+
+  Case "ty_fix". admit. (* should be same as ty_abs *)
+
+  Case "ty_app". admit. (* should be trivial once we implement fresh variables in subst function *)
+
+  Case "ty_box". intros. destruct n as [|n'].
+    SCase "n = 0". simpl. destruct (IHtd 1); auto. inversion tlvld; subst; auto. simpl. rewrite envsd. reflexivity.
+      SSCase "body can take a step at level 1". right. inversion H0; subst. exists (tbox x). auto.
+    SCase "n = n' + 1".
+      assert (S n' + 1 = n' + 2) as Hboring. omega.
+      destruct (IHtd (n' + 2)); auto. inversion tlvld; subst.
+      rewrite <- Hboring. auto.
+      simpl. rewrite envsd. omega.
+      inversion H; subst. unfold closed. rewrite <- Hboring. auto.
+      SSCase "body is value at level n + 1". left. apply vbox_n. omega.
+        assert (S n' + 1 = n' + 2) as Hboring'. omega. rewrite Hboring'. auto.
+      SSCase "body can take a step at level n + 1". right.
+        inversion H0; subst. exists (tbox x). apply s_box. rewrite Hboring. auto.
+
+  Case "ty_unbox". admit. (* postponing for now ... *)
+
+  Case "ty_run". intro n. destruct n as [|n'].
+    SCase "n = 0". intros. right. destruct (IHtd 0); auto. inversion tlvld; subst; auto.
+      SSCase "body is value at level 0".
+
+        (* body has to be a tbox ... *)
+        inversion td; subst.  inversion H.
+        inversion H0; subst. inversion H5.
+        exists body. apply s_run. inversion H0; auto. inversion H; auto. simpl. admit.
+        inversion H0; subst. inversion H3.
+        admit.
+
+      SSCase "body can take a step at level 0". inversion H0; subst. exists (trun x). auto.
+    SCase "n = n' + 1". intros.
+      assert (S n' = n' + 1) as Hboring. omega.
+      destruct (IHtd (n' + 1)); auto. inversion tlvld; subst.
+        rewrite Hboring in H1. auto.
+        rewrite envsd. omega.
+        inversion H; subst.  rewrite <- Hboring. auto.
+      SSCase "body is value at level n + 1". left. apply vrun_n. omega. rewrite Hboring. auto.
+      SSCase "body can take a step at level n + 1". right.
+        inversion H0; subst. exists (trun x). apply s_run1. rewrite Hboring. auto.
+Qed.
