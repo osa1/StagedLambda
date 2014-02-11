@@ -209,7 +209,7 @@ Inductive step : tm -> nat -> tm -> Prop :=
     step (trun e) n (trun e')
 | s_run : forall v,
     value 1 v ->
-    closed 0 v ->
+    closed 1 v ->
     step (trun (tbox v)) 0 v
 | s_unb1 : forall e n e',
     step e n e' ->
