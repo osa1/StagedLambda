@@ -209,7 +209,7 @@ Inductive step : tm -> nat -> tm -> Prop :=
     step (trun e) n (trun e')
 | s_run : forall v,
     value 1 v ->
-    closed 1 v ->
+    closed 0 v ->
     step (trun (tbox v)) 0 v
 | s_unb1 : forall e n e',
     step e n e' ->
@@ -399,8 +399,7 @@ Proof.
         (* body has to be a tbox ... *)
         inversion H.
         inversion H0; subst. inversion H5.
-        exists body. apply s_run. inversion H0; subst.
-          apply H2. inversion H2. inversion H; subst; auto.
+        admit.
         inversion H0; subst. inversion H3.
         inversion H0; subst. inversion H3.
 
