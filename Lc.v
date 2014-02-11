@@ -385,17 +385,19 @@ Proof.
   Case "ty_unbox". admit. (* postponing for now ... *)
 
   Case "ty_run". intro n. destruct n as [|n'].
-    SCase "n = 0". intros. right. destruct (IHtd 0); auto. inversion tlvld; subst; auto.
+    SCase "n = 0". intros. destruct (IHtd 0); auto. inversion tlvld; subst; auto.
       SSCase "body is value at level 0".
+        right. inversion td; subst.
 
         (* body has to be a tbox ... *)
-        inversion td; subst.  inversion H.
+        inversion H.
         inversion H0; subst. inversion H5.
-        exists body. apply s_run. inversion H0; auto. inversion H; auto. simpl. admit.
+        exists body. apply s_run. inversion H0; subst.
+          apply H2. inversion H2. inversion H; subst; auto.
         inversion H0; subst. inversion H3.
-        admit.
+        inversion H0; subst. inversion H3.
 
-      SSCase "body can take a step at level 0". inversion H0; subst. exists (trun x). auto.
+      SSCase "body can take a step at level 0". right. inversion H0; subst. exists (trun x). auto.
     SCase "n = n' + 1". intros.
       destruct (IHtd (1 + n')); auto. inversion tlvld; subst; auto.
       SSCase "body is value at level n + 1". left. apply vrun_n. omega. auto.
