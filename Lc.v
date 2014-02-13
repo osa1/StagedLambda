@@ -205,7 +205,7 @@ Fixpoint fvs (n : nat) (t : tm) : set id :=
   end.
 
 
-Fixpoint closed (n : nat) (t : tm) : Prop :=
+Definition closed (n : nat) (t : tm) : Prop :=
   fvs n t = empty_set id.
 
 
@@ -290,6 +290,73 @@ Proof.
   unfold closed. simpl. reflexivity.
 Qed.
 
+
+Lemma empty_union : forall set1 set2,
+  set_union eq_id_dec set1 set2 = nil <-> set1 = nil /\ set2 = nil.
+Proof.
+  intro set1. destruct set1 as [|h1 t1].
+  Case "set1 = nil". intros. destruct set2 as [|h2 t2].
+    SCase "set2 = nil". split; auto.
+    SCase "set2 = h2 :: t2". split; intros.
+      split. reflexivity. simpl in H. apply set_add_not_empty in H. inversion H.
+      inversion H. inversion H1.
+  Case "set1 = h1 :: t1". intros. destruct set2 as [|h2 t2].
+    SCase "set2 = nil". split; intros; auto. inversion H. inversion H0.
+    SCase "set2 = h2 :: t2". split; intros.
+      simpl in H. apply set_add_not_empty in H. inversion H.
+      inversion H. inversion H0.
+Qed.
+
+
+Theorem closed_preserved : forall term term' n,
+  closed n term ->
+  step term n term' ->
+  closed n term'.
+Proof.
+  (* TODO: in this proof, even though destructing on level is not required for some cases
+   * (i.e. tapp case) we had to do this because otherwise "simpl." does not simplify
+   * "closed" function application. There should be a way to simplify this proof(without
+   * without changing definition of "closed" and "fvs") *)
+  intros term. tm_cases (induction term) Case.
+  Case "tnat". intros. inversion H0.
+  Case "tvar". intros. inversion H0.
+  Case "tabs". intros. destruct n as [|n'].
+    SCase "n = 0". inversion H0.
+    SCase "n = n' + 1". inversion H0; subst. apply IHterm in H5. auto. auto.
+  Case "tapp". intros. destruct n as [|n'].
+    SCase "n = 0". inversion H0; subst.
+      SSCase "s_app1". inversion H. apply empty_union in H2. inversion H2. unfold closed. simpl.
+        rewrite H3. apply IHterm1 in H5. auto. auto.
+      SSCase "s_app2". inversion H. apply empty_union in H2. inversion H2. unfold closed. simpl.
+        rewrite H1. apply IHterm2 in H6. unfold closed in H6. rewrite H6. auto. auto.
+      SSCase "s_appabs".
+        admit. (* here we need a lemma that shows if a lambda term closed at level 0,
+                  applying something does not introduce new unbound variables ... *)
+      SSCase "s_fix". admit. (* same as s_appabs *)
+    SCase "n = n' + 1". inversion H0; subst.
+      SSCase "s_app1". inversion H. apply empty_union in H2. inversion H2. unfold closed. simpl.
+        rewrite H3. apply IHterm1. auto. auto.
+      SSCase "s_app2". inversion H. apply empty_union in H2. inversion H2. unfold closed. simpl.
+        rewrite H1. apply IHterm2 in H6. unfold closed in H6. rewrite H6. auto. auto.
+  Case "tfix". intros. destruct n as [|n'].
+    SCase "n = 0". inversion H0.
+    SCase "n = n' + 1". inversion H0; subst. apply IHterm in H6. auto. auto.
+  Case "tbox". intros. destruct n as [|n].
+    SCase "n = 0". inversion H0; subst. apply IHterm in H2. inversion H2. auto. auto.
+    SCase "n = n' + 1". inversion H0; subst. apply IHterm in H2. auto. auto.
+  Case "tunbox". intros. destruct n as [|n'].
+    SCase "n = 0". inversion H0.
+    SCase "n = n' + 1". inversion H0; subst. apply IHterm in H3. unfold closed in H3. unfold closed. simpl.
+      rewrite <- minus_n_O. apply H3. inversion H; subst. unfold closed. rewrite <- minus_n_O in H2. apply H2.
+      auto.
+  Case "trun". intros. destruct n as [|n'].
+      SCase "n = 0". inversion H0; subst.
+        SSCase "s_run1". apply IHterm in H2. auto. auto.
+        SSCase "s_run". auto.
+      SCase "n = n' + 1". inversion H0; subst.
+        SSCase "s_run1". apply IHterm in H2. auto.
+        SSCase "s_run1". auto.
+Qed.
 
 
 Inductive ty :=
