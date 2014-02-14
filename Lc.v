@@ -541,7 +541,11 @@ Proof.
 
     SCase "fix". admit.
 
-  Case "tfix". admit. (* should be very similar to tabs *)
+  Case "tfix". intros. destruct n as [|n'].
+    SCase "n = 0". inversion H2.
+    SCase "n = n' + 1". inversion H2; subst. inversion H1; subst.
+      apply IHterm with (envs := extend_tyenv i0 t1 (extend_tyenv i (tyfun t1 t2) env) :: envs0) (tau := t2) in H8; auto.
+        inversion H; auto.
 
   Case "tbox". intros. inversion H2; subst.
     inversion H1. apply (IHterm (1 + n) (box_env :: envs) t e') in H4; auto.
