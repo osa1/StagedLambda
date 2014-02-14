@@ -450,7 +450,15 @@ Proof.
       SSCase "body is a value". 
         destruct n' as [|n''].
         SSSCase "n = 1 | n' = 0".
-          admit. (* TODO *)
+          right. 
+          inversion H0; subst. (* Now find out that term is a tbox *)
+          SSSSCase "tnat". inversion H1.
+          SSSSCase "tabs". inversion H1.
+          SSSSCase "tfix". inversion H1.
+          SSSSCase "tbox". 
+            exists v. apply s_unb. apply H2.
+          inversion H2. inversion H2. inversion H2. inversion H2.
+          inversion H2. inversion H2. inversion H2.
         SSSCase "n = S(S n'')".
           left. apply vunbox_n. omega. simpl. apply H0.
       SSCase "body takes a step".
