@@ -409,20 +409,29 @@ Proof.
       left. apply vabs_n. omega. apply H0.
       right. inversion H0. exists (tabs i x). apply s_abs. apply H1.
 
-  Case "tapp". intros tau n envs tlvld td ld. destruct n as [|n'].
-    SCase "n = 0". admit.
-    SCase "n = S n'".
-      inversion td; subst.
-      destruct (IHterm1 (tyfun t1 tau) (S n') envs).
-        inversion tlvld; subst. apply H1. apply H2. apply ld.
-      destruct (IHterm2 t1 (S n') envs).
-        inversion tlvld; subst. apply H6. apply H4. apply ld.
-      SSCase "term1 and term2 are values".
-        left. apply vapp_n. omega. apply H. apply H0.
-      SSCase "term1 is a value, term2 takes a step".
-        right. inversion H0. exists (tapp term1 x). apply s_app2. apply H. apply H1.
-      SSCase "term1 takes a step".
-        right. inversion H. exists (tapp x term2). apply s_app1. apply H0.
+  Case "tapp". intros tau n envs tlvld td ld. 
+    inversion td.
+    destruct (IHterm1 (tyfun t1 tau) n envs).
+      inversion tlvld; subst. apply H7. apply H2. apply ld.
+    destruct (IHterm2 t1 n envs).
+      inversion tlvld; subst. apply H10. apply H4. apply ld.
+    SCase "term1 and term2 are values".
+      destruct n as [|n'].
+      SSCase "n = 0".
+        inversion H5; subst. (* Find out the shape the rator. Can be either lambda or fix. *)
+        SSSCase "tnat". inversion H2.
+        SSSCase "tabs". right. exists (subst v term2 0 t). apply s_appabs. apply H6.
+        SSSCase "tfix". right. exists (subst i2 term2 0 (subst i1 (tfix i1 i2 t) 0 t)).
+                        apply s_appfix. apply H6. 
+        SSSCase "tbox". inversion H2.
+        inversion H7. inversion H7. inversion H7. inversion H7.
+        inversion H7. inversion H7. inversion H7.
+      SSCase "n = S n'". 
+        left. apply vapp_n. omega. apply H5. apply H6.
+    SCase "term1 is a value, term2 takes a step".
+      right. inversion H6. exists (tapp term1 x). apply s_app2. apply H5. apply H7.
+    SCase "term1 takes a step".
+      right. inversion H5. exists (tapp x term2). apply s_app1. apply H6.
 
   Case "tfix". intros tau n envs tlvld td ld. destruct n as [|n'].
     SCase "n = 0". left. apply vfix_0. inversion tlvld; subst. apply H3.
