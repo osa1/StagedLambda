@@ -410,7 +410,7 @@ Proof.
       left. apply vabs_n. omega. apply H0.
       right. inversion H0. exists (tabs i x). apply s_abs. apply H1.
 
-  Case "tapp". intros tau n envs tlvld td ld. 
+  Case "tapp". intros tau n envs tlvld td ld.
     inversion td.
     destruct (IHterm1 (tyfun t1 tau) n envs).
       inversion tlvld; subst. apply H7. apply H2. apply ld.
@@ -423,11 +423,11 @@ Proof.
         SSSCase "tnat". inversion H2.
         SSSCase "tabs". right. exists (subst v term2 0 t). apply s_appabs. apply H6.
         SSSCase "tfix". right. exists (subst i2 term2 0 (subst i1 (tfix i1 i2 t) 0 t)).
-                        apply s_appfix. apply H6. 
+                        apply s_appfix. apply H6.
         SSSCase "tbox". inversion H2.
         inversion H7. inversion H7. inversion H7. inversion H7.
         inversion H7. inversion H7. inversion H7.
-      SSCase "n = S n'". 
+      SSCase "n = S n'".
         left. apply vapp_n. omega. apply H5. apply H6.
     SCase "term1 is a value, term2 takes a step".
       right. inversion H6. exists (tapp term1 x). apply s_app2. apply H5. apply H7.
@@ -562,6 +562,8 @@ Proof.
       (* this part is tricky .. we need to show that if a term is typed in empty_tyenv :: envs,
        * same term is also typed in envs *) admit.
 Qed.
+
+
 (* Local Variables: *)
 (* coq-prog-name: "/usr/local/bin/coqtop" *)
 (* coq-load-path: nil *)
