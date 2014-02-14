@@ -515,25 +515,22 @@ Theorem preservation : forall term n envs tau term',
   step term n term' ->
   has_ty envs term' tau.
 Proof.
-  intro term. tm_cases (induction term) Case.
+  intro term. tm_cases (induction term) Case; intros.
 
-  Case "tnat". intros. inversion H2.
+  Case "tnat". inversion H2.
 
-  Case "tvar". intros. inversion H2.
+  Case "tvar". inversion H2.
 
-  Case "tabs". intros. destruct n as [|n'].
+  Case "tabs". destruct n as [|n'].
     SCase "n = 0". inversion H2.
     SCase "n = n' + 1".
       inversion H2; subst. inversion H1; subst.
-      apply (IHterm (S n') (extend_tyenv i t1 env :: envs0) t2 e') in H8.
-        apply ty_abs. apply H8.
+      apply (IHterm (S n') (extend_tyenv i t1 env :: envs0) t2 e') in H8; auto.
         inversion H; auto.
-        auto.
-        auto.
 
   Case "tapp". intros. inversion H2; subst.
-    SCase "e1 can take a step".  inversion H1; subst. apply (IHterm1 n envs (tyfun t1 tau) e1') in H6; auto.
-      apply (ty_app envs e1' term2 t1 tau); auto. inversion H; auto. auto.
+    SCase "e1 can take a step". inversion H1; subst. apply (IHterm1 n envs (tyfun t1 tau) e1') in H6; auto.
+      apply (ty_app envs e1' term2 t1 tau); auto. inversion H; auto.
     SCase "e2 can take a step". inversion H1; subst. apply (IHterm2 n envs t1 e') in H10; auto.
       apply (ty_app envs term1 e' t1 tau); auto.
       inversion H; auto.
