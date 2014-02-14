@@ -389,13 +389,13 @@ Theorem progress : forall term tau n envs,
   length envs = n ->
   value n term \/ exists term', step term n term'.
 Proof.
-  intros term. 
+  intros term.
   tm_cases (induction term) Case.
 
   Case "tnat". auto.
 
   Case "tvar". intros tau n envs tlvld td ld. destruct n as [|n'].
-    SCase "n = 0". destruct envs as [|h t]. 
+    SCase "n = 0". destruct envs as [|h t].
        rewrite app_nil_l in td. inversion td. inversion H3. simpl in ld. inversion ld.
     SCase "n = n' + 1". left. apply vvar_n. omega.
 
@@ -403,12 +403,12 @@ Proof.
     SCase "n = 0". left. apply vabs_0. inversion tlvld; subst. auto.
     SCase "n = n' + 1". inversion td; subst.
       destruct envs as [|head tail].
-        inversion ld.        
-      destruct (IHterm t2 (S n') ((extend_tyenv i t1 head) :: tail)). 
+        inversion ld.
+      destruct (IHterm t2 (S n') ((extend_tyenv i t1 head) :: tail)).
       inversion tlvld; subst. auto.
       simpl in H. inversion H. rewrite H1, H2 in H3. auto.
       apply ld.
-      left. apply vabs_n. omega. apply H0. 
+      left. apply vabs_n. omega. apply H0.
       right. inversion H0. exists (tabs i x). apply s_abs. apply H1.
 
   Case "tapp". intros tau n envs tlvld td ld. destruct n as [|n'].
@@ -424,21 +424,21 @@ Proof.
       SSCase "term1 is a value, term2 takes a step".
         right. inversion H0. exists (tapp term1 x). apply s_app2. apply H. apply H1.
       SSCase "term1 takes a step".
-        right. inversion H. exists (tapp x term2). apply s_app1. apply H0. 
+        right. inversion H. exists (tapp x term2). apply s_app1. apply H0.
 
   Case "tfix". intros tau n envs tlvld td ld. destruct n as [|n'].
     SCase "n = 0". left. apply vfix_0. inversion tlvld; subst. apply H3.
     SCase "n = n' + 1". inversion td; subst.
       destruct envs as [|head tail].
         inversion ld.
-      destruct (IHterm t2 (S n') (extend_tyenv i0 t1 (extend_tyenv i (tyfun t1 t2) head) :: tail)). 
+      destruct (IHterm t2 (S n') (extend_tyenv i0 t1 (extend_tyenv i (tyfun t1 t2) head) :: tail)).
       inversion tlvld; subst. auto.
       simpl in H. inversion H. rewrite H1, H2 in H4. auto.
       apply ld.
       left. apply vfix_n. omega. apply H0.
       right. inversion H0. exists (tfix i i0 x). apply s_fix. apply H1.
 
-  Case "tbox". intros tau n envs tlvld td ld. 
+  Case "tbox". intros tau n envs tlvld td ld.
     inversion td.
     destruct (IHterm t (1+n) (box_env :: envs)).
       inversion tlvld.  apply H4.
@@ -448,7 +448,7 @@ Proof.
       left. destruct n as [|n'].
         apply vbox_0. apply H3.
         apply vbox_n. omega. apply H3.
-    SCase "body takes a step". 
+    SCase "body takes a step".
     right. inversion H3. exists (tbox x). apply s_box. apply H4.
 
   Case "tunbox". intros tau n envs tlvld td ld.
@@ -456,20 +456,20 @@ Proof.
     SCase "n = 0". inversion tlvld.
     SCase "n = n' + 1".
       inversion td; subst.
-      destruct envs as [|hdenvs tlenvs]. inversion ld. 
+      destruct envs as [|hdenvs tlenvs]. inversion ld.
       destruct (IHterm (tybox box_env tau) n' (tlenvs)).
       inversion tlvld. apply H3.
       inversion H. rewrite <- H3, <- H2. apply H1.
-      admit. (* TODO: length (h::tl) = S n  -> length tl = n. *) 
-      SSCase "body is a value". 
+      admit. (* TODO: length (h::tl) = S n  -> length tl = n. *)
+      SSCase "body is a value".
         destruct n' as [|n''].
         SSSCase "n = 1 | n' = 0".
-          right. 
+          right.
           inversion H0; subst. (* Now find out that term is a tbox *)
           SSSSCase "tnat". inversion H1.
           SSSSCase "tabs". inversion H1.
           SSSSCase "tfix". inversion H1.
-          SSSSCase "tbox". 
+          SSSSCase "tbox".
             exists v. apply s_unb. apply H2.
           inversion H2. inversion H2. inversion H2. inversion H2.
           inversion H2. inversion H2. inversion H2.
@@ -478,22 +478,22 @@ Proof.
       SSCase "body takes a step".
         right. inversion H0. exists (tunbox x). apply s_unb1. apply H2.
 
-  Case "trun". intros tau n envs tlvld td ld. 
-    destruct (IHterm (tybox empty_tyenv tau) n (envs)). 
+  Case "trun". intros tau n envs tlvld td ld.
+    destruct (IHterm (tybox empty_tyenv tau) n (envs)).
     inversion tlvld. apply H0.
     inversion td. apply H1.
     apply ld.
 
     destruct n as [|n'].
-    SCase "n = 0". inversion td; subst. 
-        right. inversion H2; subst. 
+    SCase "n = 0". inversion td; subst.
+        right. inversion H2; subst.
         SSSCase "tvar". inversion H. inversion H5.
         SSSCase "tapp". inversion H. inversion H5.
-        SSSCase "tbox". exists body. apply s_run. inversion H. apply H1. apply H5. 
+        SSSCase "tbox". exists body. apply s_run. inversion H. apply H1. apply H5.
         SSSCase "tunbox". inversion H. inversion H4.
         SSSCase "trun". inversion H. inversion H3.
     SCase "n = n' + 1". inversion td; subst.
-      SSCase "term is a value". 
+      SSCase "term is a value".
         left. apply vrun_n. omega. apply H.
       SSCase "term takes a step".
         right. inversion H. exists (trun x). apply s_run1. apply H0.
