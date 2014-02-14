@@ -411,7 +411,20 @@ Proof.
       left. apply vabs_n. omega. apply H0. 
       right. inversion H0. exists (tabs i x). apply s_abs. apply H1.
 
-  Case "tapp". admit. (* should be trivial once we implement fresh variables in subst function *)
+  Case "tapp". intros tau n envs tlvld td ld. destruct n as [|n'].
+    SCase "n = 0". admit.
+    SCase "n = S n'".
+      inversion td; subst.
+      destruct (IHterm1 (tyfun t1 tau) (S n') envs).
+        inversion tlvld; subst. apply H1. apply H2. apply ld.
+      destruct (IHterm2 t1 (S n') envs).
+        inversion tlvld; subst. apply H6. apply H4. apply ld.
+      SSCase "term1 and term2 are values".
+        left. apply vapp_n. omega. apply H. apply H0.
+      SSCase "term1 is a value, term2 takes a step".
+        right. inversion H0. exists (tapp term1 x). apply s_app2. apply H. apply H1.
+      SSCase "term1 takes a step".
+        right. inversion H. exists (tapp x term2). apply s_app1. apply H0. 
 
   Case "tfix". intros tau n envs tlvld td ld. destruct n as [|n'].
     SCase "n = 0". left. apply vfix_0. inversion tlvld; subst. apply H3.
