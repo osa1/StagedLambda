@@ -351,6 +351,7 @@ Inductive has_ty : list tyenv -> tm -> ty -> Prop :=
     has_ty envs e (tybox empty_tyenv t) ->
     has_ty envs (trun e) t.
 
+Hint Constructors has_ty.
 
 Tactic Notation "ty_cases" tactic(first) ident(c) :=
   first;
@@ -506,6 +507,60 @@ Proof.
         right. inversion H. exists (trun x). apply s_run1. apply H0.
 Qed.
 
+
+Theorem preservation : forall term n envs tau term',
+  tm_lvl term n ->
+  length envs = 1 + n ->
+  has_ty envs term tau ->
+  step term n term' ->
+  has_ty envs term' tau.
+Proof.
+  intro term. tm_cases (induction term) Case.
+
+  Case "tnat". intros. inversion H2.
+
+  Case "tvar". intros. inversion H2.
+
+  Case "tabs". intros. destruct n as [|n'].
+    SCase "n = 0". inversion H2.
+    SCase "n = n' + 1".
+      inversion H2; subst. inversion H1; subst.
+      apply (IHterm (S n') (extend_tyenv i t1 env :: envs0) t2 e') in H8.
+        apply ty_abs. apply H8.
+        inversion H; auto.
+        auto.
+        auto.
+
+  Case "tapp". intros. inversion H2; subst.
+    SCase "e1 can take a step".  inversion H1; subst. apply (IHterm1 n envs (tyfun t1 tau) e1') in H6; auto.
+      apply (ty_app envs e1' term2 t1 tau); auto. inversion H; auto. auto.
+    SCase "e2 can take a step". inversion H1; subst. apply (IHterm2 n envs t1 e') in H10; auto.
+      apply (ty_app envs term1 e' t1 tau); auto.
+      inversion H; auto.
+    SCase "application". admit.
+
+    SCase "fix". admit.
+
+  Case "tfix". admit. (* should be very similar to tabs *)
+
+  Case "tbox". intros. inversion H2; subst.
+    inversion H1. apply (IHterm (1 + n) (box_env :: envs) t e') in H4; auto.
+    inversion H; auto. simpl. rewrite H0. reflexivity.
+
+  Case "tunbox". intros. destruct n as [|n'].
+    SCase "n = 0". inversion H2.
+    SCase "n = n' + 1". inversion H2; subst.
+      SSCase "s_unb1". inversion H1. apply IHterm with (n := n') (term' := e') in H6; auto.
+        inversion H; auto. subst. auto.
+      SSCase "s_unb". admit.
+
+  Case "trun". intros. inversion H2; subst.
+    SCase "s_run1". inversion H1; subst. apply IHterm with (n := n) (term' := e') in H6; auto.
+      inversion H; auto.
+    SCase "s_run". inversion H1; subst. inversion H6; subst.
+      (* this part is tricky .. we need to show that if a term is typed in empty_tyenv :: envs,
+       * same term is also typed in envs *) admit.
+Qed.
 (* Local Variables: *)
 (* coq-prog-name: "/usr/local/bin/coqtop" *)
 (* coq-load-path: nil *)
