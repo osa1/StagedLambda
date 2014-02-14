@@ -458,9 +458,9 @@ Proof.
       inversion td; subst.
       destruct envs as [|hdenvs tlenvs]. inversion ld.
       destruct (IHterm (tybox box_env tau) n' (tlenvs)).
-      inversion tlvld. apply H3.
-      inversion H. rewrite <- H3, <- H2. apply H1.
-      admit. (* TODO: length (h::tl) = S n  -> length tl = n. *)
+        inversion tlvld. apply H3.
+        inversion H. rewrite <- H3, <- H2. apply H1.
+        simpl in ld. inversion ld. rewrite H2. reflexivity.
       SSCase "body is a value".
         destruct n' as [|n''].
         SSSCase "n = 1 | n' = 0".
