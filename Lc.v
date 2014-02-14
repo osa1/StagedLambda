@@ -413,8 +413,17 @@ Proof.
 
   Case "tapp". admit. (* should be trivial once we implement fresh variables in subst function *)
 
-  Case "tfix". admit.
-
+  Case "tfix". intros tau n envs tlvld td ld. destruct n as [|n'].
+    SCase "n = 0". left. apply vfix_0. inversion tlvld; subst. apply H3.
+    SCase "n = n' + 1". inversion td; subst.
+      destruct envs as [|head tail].
+        inversion ld.
+      destruct (IHterm t2 (S n') (extend_tyenv i0 t1 (extend_tyenv i (tyfun t1 t2) head) :: tail)). 
+      inversion tlvld; subst. auto.
+      simpl in H. inversion H. rewrite H1, H2 in H4. auto.
+      apply ld.
+      left. apply vfix_n. omega. apply H0.
+      right. inversion H0. exists (tfix i i0 x). apply s_fix. apply H1.
 
   Case "tbox". intros tau n envs. intros tlvld td ld. admit.
 (* destruct n as [|n'].
