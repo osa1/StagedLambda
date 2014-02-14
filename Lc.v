@@ -425,17 +425,17 @@ Proof.
       left. apply vfix_n. omega. apply H0.
       right. inversion H0. exists (tfix i i0 x). apply s_fix. apply H1.
 
-  Case "tbox". intros tau n envs. intros tlvld td ld. admit.
-(* destruct n as [|n'].
-    SCase "n = 0". simpl. destruct (IHtd 1); auto. inversion tlvld; subst; auto. simpl. rewrite envsd. reflexivity.
-      SSCase "body can take a step at level 1". right. inversion H0; subst. exists (tbox x). auto.
-    SCase "n = n' + 1".
-      destruct (IHtd (2 + n')); auto. inversion tlvld; subst. auto.
-      simpl. simpl in envsd. rewrite envsd. auto.
-      SSCase "body is value at level n + 1". left. apply vbox_n. omega. auto.
-      SSCase "body can take a step at level n + 1". right.
-        inversion H0; subst. exists (tbox x). apply s_box. auto.
-*)
+  Case "tbox". intros tau n envs tlvld td ld. 
+    inversion td.
+    destruct (IHterm t (1+n) (box_env :: envs)).
+    inversion tlvld. apply H4. 
+    apply H1. admit.
+    SCase "body is a value".
+      left. destruct n as [|n'].
+        apply vbox_0. apply H3.
+        apply vbox_n. omega. apply H3.
+    SCase "body takes a step". 
+    right. inversion H3. exists (tbox x). apply s_box. apply H4.
 
   Case "tunbox". admit. (* postponing for now ... *)
 
