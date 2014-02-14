@@ -429,7 +429,7 @@ Proof.
     inversion td.
     destruct (IHterm t (1+n) (box_env :: envs)).
     inversion tlvld. apply H4. 
-    apply H1. admit.
+    apply H1. admit. (* TODO: length tl = n -> length (h::tl) = 1+n *)
     SCase "body is a value".
       left. destruct n as [|n'].
         apply vbox_0. apply H3.
@@ -437,7 +437,24 @@ Proof.
     SCase "body takes a step". 
     right. inversion H3. exists (tbox x). apply s_box. apply H4.
 
-  Case "tunbox". admit. (* postponing for now ... *)
+  Case "tunbox". intros tau n envs tlvld td ld.
+    destruct n as [|n'].
+    SCase "n = 0". inversion tlvld.
+    SCase "n = n' + 1".
+      inversion td; subst.
+      destruct envs as [|hdenvs tlenvs]. inversion ld. 
+      destruct (IHterm (tybox box_env tau) n' (tlenvs)).
+      inversion tlvld. apply H3.
+      inversion H. rewrite <- H3, <- H2. apply H1.
+      admit. (* TODO: length (h::tl) = S n  -> length tl = n. *) 
+      SSCase "body is a value". 
+        destruct n' as [|n''].
+        SSSCase "n = 1 | n' = 0".
+          admit. (* TODO *)
+        SSSCase "n = S(S n'')".
+          left. apply vunbox_n. omega. simpl. apply H0.
+      SSCase "body takes a step".
+        right. inversion H0. exists (tunbox x). apply s_unb1. apply H2.
 
   Case "trun". intros tau n envs tlvld td ld. 
     destruct (IHterm (tybox empty_tyenv tau) n (envs)). 
