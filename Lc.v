@@ -441,8 +441,9 @@ Proof.
   Case "tbox". intros tau n envs tlvld td ld. 
     inversion td.
     destruct (IHterm t (1+n) (box_env :: envs)).
-    inversion tlvld. apply H4. 
-    apply H1. admit. (* TODO: length tl = n -> length (h::tl) = 1+n *)
+      inversion tlvld.  apply H4.
+      apply H1.
+      simpl. rewrite ld. reflexivity.
     SCase "body is a value".
       left. destruct n as [|n'].
         apply vbox_0. apply H3.
