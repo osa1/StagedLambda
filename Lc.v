@@ -278,7 +278,6 @@ Qed.
 
 Definition example3 := trun (tbox (tnat 42)).
 
-(*
 Example example3_evaluation :
   step example3 0 (tnat 42).
 Proof.
@@ -287,9 +286,8 @@ Proof.
   assert (step rhs 1 (tnat 42)).
   Case "proof of assertion". rewrite Heqrhs. apply example2_evaluation.
   constructor. auto.
-  unfold closed. simpl. reflexivity.
 Qed.
-*)
+
 
 Lemma empty_union : forall set1 set2,
   set_union eq_id_dec set1 set2 = nil <-> set1 = nil /\ set2 = nil.
