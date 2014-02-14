@@ -152,13 +152,13 @@ Fixpoint subst (x : id) (s : tm) (n : nat) (t : tm) : tm :=
       | tabs v t' =>
           if eq_id_dec v x
           then t
-          else tabs v (subst x s n t')
+          else tabs v (subst x s n t') (* TODO: FIXME *)
       | tfix f v t' =>
           if eq_id_dec f x
           then t
           else if eq_id_dec v x
                then t
-               else tfix f v (subst x s n t')
+               else tfix f v (subst x s n t') (* TODO: FIXME *)
       | tapp t1 t2 => tapp (subst x s n t1) (subst x s n t2)
       | tbox t' => tbox (subst x s (1+n) t')
       | tunbox _ => t (* unreachable case *)
@@ -231,7 +231,6 @@ Inductive step : tm -> nat -> tm -> Prop :=
     step (trun e) n (trun e')
 | s_run : forall v,
     value 1 v ->
-    closed 0 v ->
     step (trun (tbox v)) 0 v
 | s_unb1 : forall e n e',
     step e n e' ->
@@ -279,6 +278,7 @@ Qed.
 
 Definition example3 := trun (tbox (tnat 42)).
 
+(*
 Example example3_evaluation :
   step example3 0 (tnat 42).
 Proof.
@@ -289,7 +289,7 @@ Proof.
   constructor. auto.
   unfold closed. simpl. reflexivity.
 Qed.
-
+*)
 
 Lemma empty_union : forall set1 set2,
   set_union eq_id_dec set1 set2 = nil <-> set1 = nil /\ set2 = nil.
@@ -307,56 +307,6 @@ Proof.
       inversion H. inversion H0.
 Qed.
 
-
-Theorem closed_preserved : forall term term' n,
-  closed n term ->
-  step term n term' ->
-  closed n term'.
-Proof.
-  (* TODO: in this proof, even though destructing on level is not required for some cases
-   * (i.e. tapp case) we had to do this because otherwise "simpl." does not simplify
-   * "closed" function application. There should be a way to simplify this proof(without
-   * without changing definition of "closed" and "fvs") *)
-  intros term. tm_cases (induction term) Case.
-  Case "tnat". intros. inversion H0.
-  Case "tvar". intros. inversion H0.
-  Case "tabs". intros. destruct n as [|n'].
-    SCase "n = 0". inversion H0.
-    SCase "n = n' + 1". inversion H0; subst. apply IHterm in H5. auto. auto.
-  Case "tapp". intros. destruct n as [|n'].
-    SCase "n = 0". inversion H0; subst.
-      SSCase "s_app1". inversion H. apply empty_union in H2. inversion H2. unfold closed. simpl.
-        rewrite H3. apply IHterm1 in H5. auto. auto.
-      SSCase "s_app2". inversion H. apply empty_union in H2. inversion H2. unfold closed. simpl.
-        rewrite H1. apply IHterm2 in H6. unfold closed in H6. rewrite H6. auto. auto.
-      SSCase "s_appabs".
-        admit. (* here we need a lemma that shows if a lambda term closed at level 0,
-                  applying something does not introduce new unbound variables ... *)
-      SSCase "s_fix". admit. (* same as s_appabs *)
-    SCase "n = n' + 1". inversion H0; subst.
-      SSCase "s_app1". inversion H. apply empty_union in H2. inversion H2. unfold closed. simpl.
-        rewrite H3. apply IHterm1. auto. auto.
-      SSCase "s_app2". inversion H. apply empty_union in H2. inversion H2. unfold closed. simpl.
-        rewrite H1. apply IHterm2 in H6. unfold closed in H6. rewrite H6. auto. auto.
-  Case "tfix". intros. destruct n as [|n'].
-    SCase "n = 0". inversion H0.
-    SCase "n = n' + 1". inversion H0; subst. apply IHterm in H6. auto. auto.
-  Case "tbox". intros. destruct n as [|n].
-    SCase "n = 0". inversion H0; subst. apply IHterm in H2. inversion H2. auto. auto.
-    SCase "n = n' + 1". inversion H0; subst. apply IHterm in H2. auto. auto.
-  Case "tunbox". intros. destruct n as [|n'].
-    SCase "n = 0". inversion H0.
-    SCase "n = n' + 1". inversion H0; subst. apply IHterm in H3. unfold closed in H3. unfold closed. simpl.
-      rewrite <- minus_n_O. apply H3. inversion H; subst. unfold closed. rewrite <- minus_n_O in H2. apply H2.
-      auto.
-  Case "trun". intros. destruct n as [|n'].
-      SCase "n = 0". inversion H0; subst.
-        SSCase "s_run1". apply IHterm in H2. auto. auto.
-        SSCase "s_run". auto.
-      SCase "n = n' + 1". inversion H0; subst.
-        SSCase "s_run1". apply IHterm in H2. auto.
-        SSCase "s_run1". auto.
-Qed.
 
 
 Inductive ty :=
@@ -435,40 +385,39 @@ Qed.
 
 Theorem progress : forall term tau n envs,
   tm_lvl term n ->
-  has_ty envs term tau ->
-  length envs = 1 + n ->
-  closed n term ->
+  has_ty (envs ++ [empty_tyenv]) term tau ->
+  length envs = n ->
   value n term \/ exists term', step term n term'.
 Proof.
-  intros term tau n envs. intros tlvld td envsd. generalize dependent n. ty_cases (induction td) Case.
+  intros term. 
+  tm_cases (induction term) Case.
 
-  Case "ty_con". auto.
+  Case "tnat". auto.
 
-  Case "ty_var". intros n td ld c. destruct n as [|n'].
-    SCase "n = 0". simpl in c. inversion c.
+  Case "tvar". intros tau n envs tlvld td ld. destruct n as [|n'].
+    SCase "n = 0". destruct envs as [|h t]. 
+       rewrite app_nil_l in td. inversion td. inversion H3. simpl in ld. inversion ld.
     SCase "n = n' + 1". left. apply vvar_n. omega.
 
-  Case "ty_abs". intro n. destruct n as [|n'].
+  Case "tabs". intros tau n envs tlvld td ld. destruct n as [|n'].
     SCase "n = 0". left. apply vabs_0. inversion tlvld; subst. auto.
-    SCase "n = n' + 1". intros. destruct (IHtd (S n')); auto.
-      inversion tlvld; subst; auto.
-      SSCase "body is a value at level (S n')".
-        left. apply vabs_n. omega. auto.
-      SSCase "body can take a step at level (S n')".
-        right. inversion H0; subst. exists (tabs i x).  apply s_abs. auto.
+    SCase "n = n' + 1". inversion td; subst.
+      destruct envs as [|head tail].
+        inversion ld.        
+      destruct (IHterm t2 (S n') ((extend_tyenv i t1 head) :: tail)). 
+      inversion tlvld; subst. auto.
+      simpl in H. inversion H. rewrite H1, H2 in H3. auto.
+      apply ld.
+      left. apply vabs_n. omega. apply H0. 
+      right. inversion H0. exists (tabs i x). apply s_abs. apply H1.
 
-  Case "ty_fix". intro n. destruct n as [|n'].
-    SCase "n = 0". left. apply vfix_0. inversion tlvld; subst. auto.
-    SCase "n = n' + 1". intros. destruct (IHtd (S n')); auto.
-      inversion tlvld; subst; auto.
-      SSCase "body is a value at level (S n')".
-        left. apply vfix_n. omega. auto.
-      SSCase "body can take a step at level (S n')".
-        right. inversion H0; subst. exists (tfix f x x0). apply s_fix. auto.
+  Case "tapp". admit. (* should be trivial once we implement fresh variables in subst function *)
 
-  Case "ty_app". admit. (* should be trivial once we implement fresh variables in subst function *)
+  Case "tfix". admit.
 
-  Case "ty_box". intros. destruct n as [|n'].
+
+  Case "tbox". intros tau n envs. intros tlvld td ld. admit.
+(* destruct n as [|n'].
     SCase "n = 0". simpl. destruct (IHtd 1); auto. inversion tlvld; subst; auto. simpl. rewrite envsd. reflexivity.
       SSCase "body can take a step at level 1". right. inversion H0; subst. exists (tbox x). auto.
     SCase "n = n' + 1".
@@ -477,25 +426,32 @@ Proof.
       SSCase "body is value at level n + 1". left. apply vbox_n. omega. auto.
       SSCase "body can take a step at level n + 1". right.
         inversion H0; subst. exists (tbox x). apply s_box. auto.
+*)
 
-  Case "ty_unbox". admit. (* postponing for now ... *)
+  Case "tunbox". admit. (* postponing for now ... *)
 
-  Case "ty_run". intro n. destruct n as [|n'].
-    SCase "n = 0". intros. destruct (IHtd 0); auto. inversion tlvld; subst; auto.
-      SSCase "body is value at level 0".
-        right. inversion td; subst.
+  Case "trun". intros tau n envs tlvld td ld. 
+    destruct (IHterm (tybox empty_tyenv tau) n (envs)). 
+    inversion tlvld. apply H0.
+    inversion td. apply H1.
+    apply ld.
 
-        (* body has to be a tbox ... *)
-        inversion H.
-        inversion H0; subst. inversion H5.
-        admit.
-        inversion H0; subst. inversion H3.
-        inversion H0; subst. inversion H3.
-
-      SSCase "body can take a step at level 0". right. inversion H0; subst. exists (trun x). auto.
-    SCase "n = n' + 1". intros.
-      destruct (IHtd (1 + n')); auto. inversion tlvld; subst; auto.
-      SSCase "body is value at level n + 1". left. apply vrun_n. omega. auto.
-      SSCase "body can take a step at level n + 1". right.
-        inversion H0; subst. exists (trun x). apply s_run1. auto.
+    destruct n as [|n'].
+    SCase "n = 0". inversion td; subst. 
+        right. inversion H2; subst. 
+        SSSCase "tvar". inversion H. inversion H5.
+        SSSCase "tapp". inversion H. inversion H5.
+        SSSCase "tbox". exists body. apply s_run. inversion H. apply H1. apply H5. 
+        SSSCase "tunbox". inversion H. inversion H4.
+        SSSCase "trun". inversion H. inversion H3.
+    SCase "n = n' + 1". inversion td; subst.
+      SSCase "term is a value". 
+        left. apply vrun_n. omega. apply H.
+      SSCase "term takes a step".
+        right. inversion H. exists (trun x). apply s_run1. apply H0.
 Qed.
+
+(* Local Variables: *)
+(* coq-prog-name: "/usr/local/bin/coqtop" *)
+(* coq-load-path: nil *)
+(* End: *)
