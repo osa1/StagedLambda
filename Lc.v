@@ -512,32 +512,27 @@ Lemma env_elimination : forall v n envn envs env0 tau,
   value (1+n) v ->
   length envs = n ->
   has_ty ((envn :: envs) ++ [env0]) v tau ->
-  has_ty (envn::envs) v tau.
+  has_ty (envn :: envs) v tau.
 Proof.
   intro v. tm_cases (induction v) Case; intros.
   
-  Case "tnat". inversion H1. apply (ty_con (envn::envs) n).
+  Case "tnat". inversion H1. apply ty_con.
 
-  Case "tvar". inversion H1. subst.
-    apply (ty_var envn envs i tau). apply H6.
+  Case "tvar". inversion H1. subst. auto.
 
   Case "tabs". inversion H1.
-    apply IHv with (n := n) in H7.
-    apply (ty_abs envn envs i t1 t2 v). apply H7.
-    destruct n as [|n'].
-      inversion H. apply H12.
-      inversion H. apply H12.
-    apply H0.
+    apply IHv with (n := n) in H7. auto. subst. inversion H; auto. auto.
 
   Case "tapp". inversion H1.
     apply IHv1 with (n := n) in H5.
     apply IHv2 with (n := n) in H7.
-    apply (ty_app (envn::envs) v1 v2 t1 tau).
+    apply ty_app with (t1 := t1).
     subst. apply H5. apply H7.
     inversion H. apply H13. apply H0.
     inversion H. apply H12. apply H0.
 
-  Case "tfix". admit.
+  Case "tfix". inversion H1.
+    apply IHv with (n := n) in H8. auto. subst. inversion H; auto. auto.
 
   Case "tbox". inversion H1.
     apply IHv with (n:= 1+n) in H4.
@@ -551,8 +546,8 @@ Proof.
       destruct n as [|n']. inversion H. omega.
       apply IHv with (n := n') (envn := hdenvs) (envs := tlenvs) (tau := (tybox envn tau)) in H6.
       apply (ty_unbox envn (hdenvs::tlenvs) v tau).
-      apply H6. inversion H; subst. simpl. admit.
-      admit.
+      apply H6. inversion H; subst. simpl. apply H10.
+      auto.
   
   Case "trun". inversion H1.
     apply IHv with (n := n) in H4.
