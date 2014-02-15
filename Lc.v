@@ -594,6 +594,45 @@ Proof.
     inversion H; auto.
 Qed.
 
+
+Definition extension := fun (e1 e2 : tyenv) => forall i tau,
+  e2 i = tau -> e1 i = tau.
+
+Hint Unfold extension.
+
+
+Lemma weakening : forall term envs env0 env0' tau,
+  has_ty (envs ++ [env0]) term tau ->
+  extension env0' env0 ->
+  has_ty (envs ++ [env0']) term tau.
+Proof.
+  intro term. tm_cases (induction term) Case.
+
+  Case "tnat". intros. inversion H; auto.
+
+  Case "tvar". destruct envs as [|h t].
+    SCase "envs = []". intros. unfold extension in H0.
+      simpl. apply ty_var. apply H0. simpl in H. inversion H. auto.
+    SCase "envs = h :: t". intros. unfold extension in H0.
+      inversion H; subst. apply ty_var. apply H5.
+
+  Case "tabs". admit.
+
+  Case "tapp". intros. inversion H; subst.
+      apply IHterm1 with (env0' := env0') in H4; auto.
+      apply IHterm2 with (env0' := env0') in H6; auto.
+      simpl. apply (ty_app (envs ++ [env0']) term1 term2 t1 tau); auto.
+
+  Case "tfix". admit.
+
+  Case "tbox". admit.
+
+  Case "tunbox". admit.
+
+  Case "trun". intros. inversion H; subst. apply IHterm with (env0' := env0') in H3; auto.
+Qed.
+
+
 Theorem preservation : forall term n envs tau term',
   tm_lvl term n ->
   length envs = 1 + n ->
