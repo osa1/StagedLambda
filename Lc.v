@@ -419,7 +419,7 @@ Proof.
     SCase "term1 and term2 are values".
       destruct n as [|n'].
       SSCase "n = 0".
-        inversion H5; subst. (* Find out the shape the rator. Can be either lambda or fix. *)
+        inversion H5; subst. (* Find out the shape of the rator. Can be either lambda or fix. *)
         SSSCase "tnat". inversion H2.
         SSSCase "tabs". right. exists (subst v term2 0 t). apply s_appabs. apply H6.
         SSSCase "tfix". right. exists (subst i2 term2 0 (subst i1 (tfix i1 i2 t) 0 t)).
@@ -508,6 +508,77 @@ Proof.
 Qed.
 
 
+Lemma env_elimination : forall v n envn envs env0 tau,
+  value (1+n) v ->
+  length envs = n ->
+  has_ty ((envn :: envs) ++ [env0]) v tau ->
+  has_ty (envn::envs) v tau.
+Proof.
+  intro v. tm_cases (induction v) Case; intros.
+  
+  Case "tnat". inversion H1. apply (ty_con (envn::envs) n).
+
+  Case "tvar". inversion H1. subst.
+    apply (ty_var envn envs i tau). apply H6.
+
+  Case "tabs". inversion H1.
+    apply IHv with (n := n) in H7.
+    apply (ty_abs envn envs i t1 t2 v). apply H7.
+    destruct n as [|n'].
+      inversion H. apply H12.
+      inversion H. apply H12.
+    apply H0.
+
+  Case "tapp". inversion H1.
+    apply IHv1 with (n := n) in H5.
+    apply IHv2 with (n := n) in H7.
+    apply (ty_app (envn::envs) v1 v2 t1 tau).
+    subst. apply H5. apply H7.
+    inversion H. apply H13. apply H0.
+    inversion H. apply H12. apply H0.
+
+  Case "tfix". admit.
+
+  Case "tbox". inversion H1.
+    apply IHv with (n:= 1+n) in H4.
+    apply (ty_box box_env (envn::envs) v t).
+    apply H4. inversion H; subst. apply H9. simpl. rewrite H0. reflexivity.
+    
+  Case "tunbox". inversion H1.
+    destruct envs as [|hdenvs tlenvs].
+    SCase "envs is []". inversion H. simpl in H0. rewrite <- H0 in H8. omega.
+    SCase "envs is hd::tl".
+      destruct n as [|n']. inversion H. omega.
+      apply IHv with (n := n') (envn := hdenvs) (envs := tlenvs) (tau := (tybox envn tau)) in H6.
+      apply (ty_unbox envn (hdenvs::tlenvs) v tau).
+      apply H6. inversion H; subst. simpl. admit.
+      admit.
+  
+  Case "trun". inversion H1.
+    apply IHv with (n := n) in H4.
+    apply (ty_run (envn::envs) v tau).
+    apply H4. inversion H. apply H9. apply H0.
+Qed.
+
+
+Lemma env_addition : forall term n envn envs env0 tau,
+  tm_lvl term n ->
+  length envs = n ->
+  has_ty (envn :: envs) term tau ->
+  has_ty ((envn :: envs) ++ [env0]) term tau.
+Proof.
+  intro v. tm_cases (induction v) Case; intros.
+  
+  Case "tnat". admit.
+  Case "tvar". admit.
+  Case "tabs". admit.
+  Case "tapp". admit.
+  Case "tfix". admit.
+  Case "tbox". admit.
+  Case "tunbox". admit.
+  Case "trun". admit.
+Qed.
+
 Theorem preservation : forall term n envs tau term',
   tm_lvl term n ->
   length envs = 1 + n ->
@@ -553,14 +624,22 @@ Proof.
     SCase "n = n' + 1". inversion H2; subst.
       SSCase "s_unb1". inversion H1. apply IHterm with (n := n') (term' := e') in H6; auto.
         inversion H; auto. subst. auto.
-      SSCase "s_unb". admit.
-
+      SSCase "s_unb". inversion H1. inversion H6. apply H11.
   Case "trun". intros. inversion H2; subst.
     SCase "s_run1". inversion H1; subst. apply IHterm with (n := n) (term' := e') in H6; auto.
       inversion H; auto.
-    SCase "s_run". inversion H1; subst. inversion H6; subst.
-      (* this part is tricky .. we need to show that if a term is typed in empty_tyenv :: envs,
-       * same term is also typed in envs *) admit.
+    SCase "s_run". inversion H1. inversion H6. subst.
+      destruct envs as [|hdenvs tlenvs].
+      SSCase "envs is []". inversion H0.
+      SSCase "envs is hdenvs::tlenvs".
+        inversion H0.
+        destruct tlenvs as [|htlenvs ttlenvs].
+        SSSCase "tlenvs is []".
+          apply (env_elimination term' 0 empty_tyenv [] hdenvs tau) in H11.
+          admit. (* TODO: apply weakening here. *)
+          simpl. apply H4. apply H5.
+        SSSCase "tlenvs is not []".
+        inversion H5.
 Qed.
 
 
