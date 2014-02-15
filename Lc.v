@@ -59,6 +59,8 @@ Proof.
   tm_cases (induction term) Case; intros lvl td; inversion td; subst; auto.
 Qed.
 
+Hint Resolve tm_lvl_inc.
+
 
 Inductive value : nat -> tm -> Prop :=
 (* nats are values in all stages *)
@@ -562,16 +564,33 @@ Lemma env_addition : forall term n envn envs env0 tau,
   has_ty (envn :: envs) term tau ->
   has_ty ((envn :: envs) ++ [env0]) term tau.
 Proof.
-  intro v. tm_cases (induction v) Case; intros.
-  
-  Case "tnat". admit.
-  Case "tvar". admit.
-  Case "tabs". admit.
-  Case "tapp". admit.
-  Case "tfix". admit.
-  Case "tbox". admit.
-  Case "tunbox". admit.
-  Case "trun". admit.
+  intro v. tm_cases (induction v) Case; intros; inversion H1; auto.
+
+  Case "tvar". apply ty_var. apply H6.
+
+  Case "tabs". subst.
+    apply ty_abs. apply IHv with (n := length envs) (env0 := env0) in H7; auto.
+    inversion H; auto.
+
+  Case "tapp". subst. inversion H; subst.
+    apply IHv1 with (n := length envs) (env0 := env0) in H5; auto.
+    apply IHv2 with (n := length envs) (env0 := env0) in H7; auto.
+    apply ty_app with (t1 := t1); auto.
+
+  Case "tfix". subst.
+    apply ty_fix. apply IHv with (n := length envs) (env0 := env0) in H8; auto.
+    inversion H; auto.
+
+  Case "tbox". apply IHv with (n := 1 + n) (env0 := env0) in H4; auto.
+    inversion H; auto. inversion H0; auto.
+
+  Case "tunbox". destruct envs as [|hd tl].
+    SCase "envs = []". inversion H. rewrite <- H9 in H0. inversion H0.
+    SCase "envs = hd :: tl". apply IHv with (n := n-1) (env0 := env0) in H6.
+      apply ty_unbox; auto. inversion H; subst. simpl. admit. simpl in H0. admit.
+
+  Case "trun". apply IHv with (n := n) (env0 := env0) in H4; auto.
+    inversion H; auto.
 Qed.
 
 Theorem preservation : forall term n envs tau term',
