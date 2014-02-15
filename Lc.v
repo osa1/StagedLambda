@@ -587,7 +587,8 @@ Proof.
   Case "tunbox". destruct envs as [|hd tl].
     SCase "envs = []". inversion H. rewrite <- H9 in H0. inversion H0.
     SCase "envs = hd :: tl". apply IHv with (n := n-1) (env0 := env0) in H6.
-      apply ty_unbox; auto. inversion H; subst. simpl. admit. simpl in H0. admit.
+      apply ty_unbox; auto. inversion H; subst. simpl. rewrite <- minus_n_O. auto. simpl in H0.
+        destruct n as [|n']. inversion H0. rewrite <- H0. simpl. omega.
 
   Case "trun". apply IHv with (n := n) (env0 := env0) in H4; auto.
     inversion H; auto.
