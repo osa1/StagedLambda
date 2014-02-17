@@ -596,14 +596,16 @@ Qed.
 
 
 Definition extension := fun (e1 e2 : tyenv) => forall i tau,
-  e2 i = tau -> e1 i = tau.
+  e2 i = Some tau -> e1 i = Some tau.
 
 Hint Unfold extension.
 
 
-Lemma weakening : forall term envs env0 env0' tau,
+Lemma weakening : forall term envs env0 env0' tau n,
   has_ty (envs ++ [env0]) term tau ->
   extension env0' env0 ->
+  tm_lvl term n ->
+  length envs = n ->
   has_ty (envs ++ [env0']) term tau.
 Proof.
   intro term. tm_cases (induction term) Case.
@@ -614,22 +616,37 @@ Proof.
     SCase "envs = []". intros. unfold extension in H0.
       simpl. apply ty_var. apply H0. simpl in H. inversion H. auto.
     SCase "envs = h :: t". intros. unfold extension in H0.
-      inversion H; subst. apply ty_var. apply H5.
+      inversion H; subst. apply ty_var. apply H7.
 
   Case "tabs". admit.
 
-  Case "tapp". intros. inversion H; subst.
-      apply IHterm1 with (env0' := env0') in H4; auto.
-      apply IHterm2 with (env0' := env0') in H6; auto.
-      simpl. apply (ty_app (envs ++ [env0']) term1 term2 t1 tau); auto.
+  Case "tapp". intros. inversion H.
+      apply IHterm1 with (env0' := env0') (n := n) in H6; auto.
+      apply IHterm2 with (env0' := env0') (n := n) in H8; auto.
+      apply (ty_app (envs ++ [env0']) term1 term2 t1 tau); auto.
+      inversion H1; auto. inversion H1; auto.
 
   Case "tfix". admit.
 
-  Case "tbox". admit.
+  Case "tbox". intros. inversion H.
+    apply IHterm with (env0' := env0') (envs := (box_env :: envs)) (n := 1+n) in H5; auto.
+    inversion H1; auto. simpl. rewrite H2. reflexivity.
 
-  Case "tunbox". admit.
+  Case "tunbox". intros. 
+    destruct envs as [|h t]. 
+    SCase "envs = []".
+      simpl in H2. rewrite <- H2 in H1. inversion H1.
+    SCase "envs = h :: t".
+      simpl in H. simpl. inversion H.
+      apply IHterm with (env0' := env0') (envs := t) (n := n - 1) in H7; subst.
+      apply ty_unbox with (box_env := h).
+      assumption. assumption.
+      inversion H1. simpl. admit.
+      simpl. apply minus_n_O.
 
-  Case "trun". intros. inversion H; subst. apply IHterm with (env0' := env0') in H3; auto.
+  Case "trun". intros. inversion H.
+    apply IHterm with (env0' := env0') (n:= n) in H5; auto.
+    inversion H1; auto.
 Qed.
 
 
