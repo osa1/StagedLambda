@@ -662,15 +662,47 @@ Proof.
     inversion H1; auto.
 Qed.
 
-Lemma substitutability : forall e n x xsubst taux tau env envs, 
+Lemma substitutability : forall e n x xsubst taux tau envs env0, 
   tm_lvl e n ->
   tm_lvl xsubst 0 -> 
   closed 0 xsubst ->
-  has_ty (extend_tyenv x taux env :: envs) e tau ->
-  has_ty (env :: envs) xsubst taux ->
-  has_ty (env :: envs) (subst x xsubst n e) tau.
+  length envs = n ->
+  has_ty (envs ++ [extend_tyenv x taux env0]) e tau ->
+  has_ty [empty_tyenv] xsubst taux ->
+  has_ty (envs ++ [env0]) (subst x xsubst n e) tau.
 Proof.
-  admit.
+  intro e. tm_cases (induction e) Case.
+
+  Case "tnat". intros. simpl. destruct n0 as [|n'].
+    inversion H3. apply ty_con. 
+    inversion H3. apply ty_con.
+
+  Case "tvar". admit.
+
+  Case "tabs". admit.
+
+  Case "tapp". admit.
+
+  Case "tfix". admit.
+
+  Case "tbox". admit.
+
+  Case "tunbox". intros. inversion H3. inversion H. subst.
+    destruct envs as [|hdenvs tlenvs].
+    SCase "envs = []". simpl in H11. omega.
+    SCase "envs = hdenvs :: tlenvs".
+      inversion H5. rewrite H8 in H7.
+      apply IHe with (n := l) (x := x) (env0 := env0) (envs := tlenvs) (xsubst := xsubst) (tau := (tybox box_env tau)) in H7.
+      simpl. apply ty_unbox. rewrite <- minus_n_O. rewrite <- H6.
+      assumption. assumption. assumption. assumption.
+      simpl in H11. admit.
+      assumption.
+
+  Case "trun". intros. inversion H3. inversion H. subst.
+    apply IHe with (n := length envs) (x := x) (env0 := env0) (envs := envs) (xsubst := xsubst) (tau := (tybox empty_tyenv tau)) in H7.
+    apply ty_run in H7.
+    simpl. destruct (length envs) as [|n'].
+    assumption. assumption. assumption. assumption. assumption. reflexivity. assumption.
 Qed.
 
 
