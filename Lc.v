@@ -662,6 +662,17 @@ Proof.
     inversion H1; auto.
 Qed.
 
+Lemma substitutability : forall e n x xsubst taux tau env envs, 
+  tm_lvl e n ->
+  tm_lvl xsubst 0 -> 
+  closed 0 xsubst ->
+  has_ty (extend_tyenv x taux env :: envs) e tau ->
+  has_ty (env :: envs) xsubst taux ->
+  has_ty (env :: envs) (subst x xsubst n e) tau.
+Proof.
+  admit.
+Qed.
+
 
 Theorem preservation : forall term n envs tau term',
   tm_lvl term n ->
@@ -689,7 +700,13 @@ Proof.
     SCase "e2 can take a step". inversion H1; subst. apply (IHterm2 n envs t1 e') in H10; auto.
       apply (ty_app envs term1 e' t1 tau); auto.
       inversion H; auto.
-    SCase "application". admit.
+    SCase "application".
+      inversion H1. inversion H6. subst.
+      apply substitutability with (taux := t1).
+        inversion H. inversion H5. apply H15.
+        inversion H. apply H10.
+        admit. (* Prove that term2 is closed. *)
+        assumption. assumption.
 
     SCase "fix". admit.
 
