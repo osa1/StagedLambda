@@ -618,7 +618,19 @@ Proof.
     SCase "envs = h :: t". intros. unfold extension in H0.
       inversion H; subst. apply ty_var. apply H7.
 
-  Case "tabs". admit.
+  Case "tabs". intros. inversion H. destruct envs as [|hdenvs tlenvs].
+    SCase "envs is []".
+      simpl. simpl in H. simpl in H3. subst. inversion H3. rewrite H5 in H7, H3.
+      rewrite H4 in H7, H3.
+      apply IHterm with (envs := []) (env0 := extend_tyenv i t1 env0) (env0' := extend_tyenv i t1 env0') (n := 0) in H7. simpl in H7.
+      apply ty_abs. assumption.
+      admit.
+      simpl in H1. inversion H1. assumption. simpl. reflexivity.
+    SCase "envs is hdenvs :: tlenvs".
+      inversion H3. rewrite H10 in H7.
+      apply IHterm with (envs := extend_tyenv i t1 env :: tlenvs) (env0' := env0') (n := n) in H7.
+      simpl. simpl in H7. rewrite H9 in H7. apply ty_abs. assumption.
+      assumption. inversion H1. assumption. simpl. simpl in H2. assumption.
 
   Case "tapp". intros. inversion H.
       apply IHterm1 with (env0' := env0') (n := n) in H6; auto.
@@ -641,7 +653,8 @@ Proof.
       apply IHterm with (env0' := env0') (envs := t) (n := n - 1) in H7; subst.
       apply ty_unbox with (box_env := h).
       assumption. assumption.
-      inversion H1. simpl. admit.
+      inversion H1. simpl. rewrite <- H3 in H4. rewrite <- H3.
+      destruct l as [|l']. simpl. assumption. simpl. assumption.
       simpl. apply minus_n_O.
 
   Case "trun". intros. inversion H.
