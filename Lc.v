@@ -674,7 +674,14 @@ Proof.
       inversion H1; auto.
       inversion H1; auto.
 
-  Case "tfix". admit.
+  Case "tfix". intros. destruct envs as [|hdenvs tlenvs].
+    SCase "envs is []". inversion H. apply ty_fix.
+      remember (extend_tyenv i0 t1 (extend_tyenv i (tyfun t1 t2) env0)) as extended_env.
+      assert ([extended_env] = [] ++ [extended_env]); auto. rewrite H10 in H9.
+      apply IHterm with (env0' := extend_tyenv i0 t1 (extend_tyenv i (tyfun t1 t2) env0')) (n := 0) in H9; auto.
+      rewrite Heqextended_env; auto.
+      inversion H1; subst; auto.
+    SCase "ernvs is hdenvs :: tlenvs". admit.
 
   Case "tbox". intros. inversion H.
     apply IHterm with (env0' := env0') (envs := (box_env :: envs)) (n := 1+n) in H5; auto.
