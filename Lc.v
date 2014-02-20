@@ -600,6 +600,22 @@ Definition extension := fun (e1 e2 : tyenv) => forall i tau,
 
 Hint Unfold extension.
 
+Lemma any_env_extends_empty_env : forall env,
+  extension env empty_tyenv.
+Proof.
+  intros. unfold extension. intros. unfold empty_tyenv in H. inversion H.
+Qed.
+
+Lemma extension_preservation : forall env env' x tau,
+  extension env env' ->
+  extension (extend_tyenv x tau env) (extend_tyenv x tau env').
+Proof.
+  intros. unfold extension in H.
+  unfold extend_tyenv. intros i.
+  destruct (eq_id_dec x i).
+  SCase "x = i". intros. assumption.
+  SCase "x <> i". intros. apply H with (i := i) (tau := tau0). assumption.
+Qed.
 
 Lemma weakening : forall term envs env0 env0' tau n,
   has_ty (envs ++ [env0]) term tau ->
@@ -624,7 +640,8 @@ Proof.
       rewrite H4 in H7, H3.
       apply IHterm with (envs := []) (env0 := extend_tyenv i t1 env0) (env0' := extend_tyenv i t1 env0') (n := 0) in H7. simpl in H7.
       apply ty_abs. assumption.
-      admit.
+      apply extension_preservation with (env := env0') (env' := env0) (x := i) (tau := t1).
+      assumption.
       simpl in H1. inversion H1. assumption. simpl. reflexivity.
     SCase "envs is hdenvs :: tlenvs".
       inversion H3. rewrite H10 in H7.
@@ -662,6 +679,7 @@ Proof.
     inversion H1; auto.
 Qed.
 
+
 Lemma substitutability : forall e n x xsubst taux tau envs env0, 
   tm_lvl e n ->
   tm_lvl xsubst 0 ->
@@ -686,7 +704,7 @@ Proof.
           SSSSCase "x = x". inversion H9; subst.
             apply weakening with (term := xsubst) (envs := []) (env0 := empty_tyenv) (env0' := env0) (tau := tau) (n := 0).
             simpl. assumption.
-            admit. (* show that extension env0 empty_tyenv *)
+            apply (any_env_extends_empty_env env0).
             assumption. auto.
           SSSSCase "x <> x". tauto.
         SSSCase "envs = hdenvs :: tlenvs". simpl in H2. inversion H2.
@@ -772,11 +790,7 @@ Proof.
       inversion H; auto.
     SCase "application".
       inversion H1. inversion H6. subst.
-      apply substitutability with (taux := t1).
-        inversion H. inversion H5. apply H15.
-        inversion H. apply H10.
-        admit. (* Prove that term2 is closed. *)
-        assumption. assumption.
+      admit.
 
     SCase "fix". admit.
 
@@ -796,6 +810,7 @@ Proof.
       SSCase "s_unb1". inversion H1. apply IHterm with (n := n') (term' := e') in H6; auto.
         inversion H; auto. subst. auto.
       SSCase "s_unb". inversion H1. inversion H6. apply H11.
+
   Case "trun". intros. inversion H2; subst.
     SCase "s_run1". inversion H1; subst. apply IHterm with (n := n) (term' := e') in H6; auto.
       inversion H; auto.
