@@ -637,6 +637,23 @@ Qed.
 Hint Resolve extension_preservation.
 
 
+Lemma env_shadowing : forall env x tau tau',
+  extend_tyenv x tau (extend_tyenv x tau' env) = extend_tyenv x tau env.
+Proof.
+  admit.
+Qed.
+
+Hint Resolve env_shadowing.
+
+
+Lemma env_permutability : forall env x y tau tau',
+  x <> y ->
+  extend_tyenv x tau (extend_tyenv y tau' env) = extend_tyenv y tau' (extend_tyenv x tau env).
+Proof.
+  admit.
+Qed.
+
+
 Lemma weakening : forall term envs env0 env0' tau n,
   has_ty (envs ++ [env0]) term tau ->
   extension env0' env0 ->
@@ -746,7 +763,25 @@ Proof.
       SSCase "envs = hdenvs :: tlenvs".
         inversion H3. simpl. apply ty_var. assumption.
 
-  Case "tabs". admit.
+  Case "tabs". intros. inversion H3. inversion H.
+    destruct n as [|n'].
+    SCase "n = 0". destruct envs as [|hdenvs tlenvs].
+      SSCase "envs = []". simpl in *. destruct (eq_id_dec i x).
+        SSSCase "i = x". inversion H5. subst.
+          rewrite env_shadowing in H9.
+          apply ty_abs. assumption.
+        SSSCase "i <> x". inversion H5. subst.
+          rewrite env_permutability in H9.
+          apply ty_abs.
+          apply IHe with (n := 0) (x := x) (xsubst := xsubst) (taux := taux) (tau := t2) (envs := []) (env0 := (extend_tyenv i t1 env0)) in H9.
+          auto. auto. auto. auto. auto. auto. auto.
+      SSCase "envs = hdenvs :: tlenvs". inversion H2.
+    SCase "n = S n'". destruct envs as [|hdenvs tlenvs].
+      SSCase "envs = []". simpl in H2. inversion H2.
+      SSCase "envs = hdenvs :: tlenvs". inversion H5. subst.
+        simpl in *. apply ty_abs.
+        apply IHe with (n := S n') (x := x) (xsubst := xsubst) (taux := taux) (tau := t2) (envs := extend_tyenv i t1 hdenvs :: tlenvs) (env0 := env0) in H9.
+        auto. auto. auto. auto. auto. auto.
 
   Case "tapp". intros. inversion H3. inversion H. subst.
     apply IHe1 with (n := length envs) (x := x) (env0 := env0) (envs := envs) (xsubst := xsubst) (tau := tyfun t1 tau) in H8; auto.
