@@ -773,15 +773,14 @@ Proof.
         SSSCase "i <> x". inversion H5. subst.
           rewrite env_permutability in H9.
           apply ty_abs.
-          apply IHe with (n := 0) (x := x) (xsubst := xsubst) (taux := taux) (tau := t2) (envs := []) (env0 := (extend_tyenv i t1 env0)) in H9.
-          auto. auto. auto. auto. auto. auto. auto.
+          apply IHe with (n := 0) (x := x) (xsubst := xsubst) (taux := taux) (tau := t2) (envs := []) (env0 := (extend_tyenv i t1 env0)) in H9; auto.
+          auto.
       SSCase "envs = hdenvs :: tlenvs". inversion H2.
     SCase "n = S n'". destruct envs as [|hdenvs tlenvs].
       SSCase "envs = []". simpl in H2. inversion H2.
       SSCase "envs = hdenvs :: tlenvs". inversion H5. subst.
         simpl in *. apply ty_abs.
-        apply IHe with (n := S n') (x := x) (xsubst := xsubst) (taux := taux) (tau := t2) (envs := extend_tyenv i t1 hdenvs :: tlenvs) (env0 := env0) in H9.
-        auto. auto. auto. auto. auto. auto.
+        apply IHe with (n := S n') (x := x) (xsubst := xsubst) (taux := taux) (tau := t2) (envs := extend_tyenv i t1 hdenvs :: tlenvs) (env0 := env0) in H9; auto.
 
   Case "tapp". intros. inversion H3. inversion H. subst.
     apply IHe1 with (n := length envs) (x := x) (env0 := env0) (envs := envs) (xsubst := xsubst) (tau := tyfun t1 tau) in H8; auto.
