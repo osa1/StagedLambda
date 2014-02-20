@@ -122,6 +122,8 @@ Proof.
     intros. inversion H; subst; auto.
 Qed.
 
+Hint Resolve values_are_terms.
+
 
 Lemma values_are_terms' :
   forall term lvl, value (1+lvl) term -> tm_lvl term lvl.
@@ -143,6 +145,8 @@ Proof.
   Case "trun".
     intros. inversion H; subst; auto.
 Qed.
+
+Hint Resolve values_are_terms'.
 
 
 Fixpoint subst (x : id) (s : tm) (n : nat) (t : tm) : tm :=
@@ -179,6 +183,8 @@ Fixpoint subst (x : id) (s : tm) (n : nat) (t : tm) : tm :=
       end
   end.
 
+Hint Resolve subst.
+
 
 Fixpoint fvs (n : nat) (t : tm) : set id :=
   match n with
@@ -206,9 +212,13 @@ Fixpoint fvs (n : nat) (t : tm) : set id :=
       end
   end.
 
+Hint Resolve fvs.
+
 
 Definition closed (n : nat) (t : tm) : Prop :=
   fvs n t = empty_set id.
+
+Hint Unfold closed.
 
 
 Inductive step : tm -> nat -> tm -> Prop :=
@@ -365,6 +375,8 @@ Tactic Notation "ty_cases" tactic(first) ident(c) :=
 
 Definition stuck : tm -> Prop :=
   fun t => forall t', not (step t 0 t').
+
+Hint Unfold stuck.
 
 
 Example example_stuck1 : stuck (tapp (tnat 1) (tnat 2)).
@@ -557,6 +569,8 @@ Proof.
     apply H4. inversion H. apply H9. apply H0.
 Qed.
 
+Hint Resolve env_elimination.
+
 
 Lemma env_addition : forall term n envn envs env0 tau,
   tm_lvl term n ->
@@ -594,6 +608,8 @@ Proof.
     inversion H; auto.
 Qed.
 
+Hint Resolve env_addition.
+
 
 Definition extension := fun (e1 e2 : tyenv) => forall i tau,
   e2 i = Some tau -> e1 i = Some tau.
@@ -606,15 +622,16 @@ Proof.
   intros. unfold extension. intros. unfold empty_tyenv in H. inversion H.
 Qed.
 
+Hint Resolve any_env_extends_empty_env.
+
+
 Lemma extension_preservation : forall env env' x tau,
   extension env env' ->
   extension (extend_tyenv x tau env) (extend_tyenv x tau env').
 Proof.
   intros. unfold extension in H.
   unfold extend_tyenv. intros i.
-  destruct (eq_id_dec x i).
-  SCase "x = i". intros. assumption.
-  SCase "x <> i". intros. apply H with (i := i) (tau := tau0). assumption.
+  destruct (eq_id_dec x i); auto.
 Qed.
 
 Lemma weakening : forall term envs env0 env0' tau n,
