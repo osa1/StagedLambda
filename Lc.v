@@ -681,7 +681,9 @@ Proof.
       apply IHterm with (env0' := extend_tyenv i0 t1 (extend_tyenv i (tyfun t1 t2) env0')) (n := 0) in H9; auto.
       rewrite Heqextended_env; auto.
       inversion H1; subst; auto.
-    SCase "ernvs is hdenvs :: tlenvs". admit.
+    SCase "envs is hdenvs :: tlenvs". inversion H; subst.
+      rewrite app_comm_cons in H9. apply IHterm with (env0' := env0') (n := length (hdenvs :: tlenvs)) in H9; simpl; auto.
+        inversion H1; auto.
 
   Case "tbox". intros. inversion H.
     apply IHterm with (env0' := env0') (envs := (box_env :: envs)) (n := 1+n) in H5; auto.
