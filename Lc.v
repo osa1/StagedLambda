@@ -321,7 +321,7 @@ Definition empty_tyenv : tyenv := fun _ => None.
 Definition extend_tyenv : id -> ty -> tyenv -> tyenv :=
   fun i t e => fun i' => if eq_id_dec i i'
                          then Some t
-                         else e i.
+                         else e i'.
 
 Definition singleton_env : id -> ty -> tyenv :=
   fun i t => extend_tyenv i t empty_tyenv.
@@ -664,7 +664,7 @@ Qed.
 
 Lemma substitutability : forall e n x xsubst taux tau envs env0, 
   tm_lvl e n ->
-  tm_lvl xsubst 0 -> 
+  tm_lvl xsubst 0 ->
   closed 0 xsubst ->
   length envs = n ->
   has_ty (envs ++ [extend_tyenv x taux env0]) e tau ->
@@ -674,10 +674,34 @@ Proof.
   intro e. tm_cases (induction e) Case.
 
   Case "tnat". intros. simpl. destruct n0 as [|n'].
-    inversion H3. apply ty_con. 
+    inversion H3. apply ty_con.
     inversion H3. apply ty_con.
 
-  Case "tvar". admit.
+  Case "tvar". intros. simpl. destruct n as [|n'].
+    SCase "n = 0". destruct (eq_id_dec i x).
+      SSCase "i = x". subst. destruct envs as [|hdenvs tlenvs].
+        SSSCase "envs = []". simpl in H3. simpl.
+          inversion H3. unfold extend_tyenv in H9.
+          destruct (eq_id_dec x x).
+          SSSSCase "x = x". inversion H9; subst.
+            apply weakening with (term := xsubst) (envs := []) (env0 := empty_tyenv) (env0' := env0) (tau := tau) (n := 0).
+            simpl. assumption.
+            admit. (* show that extension env0 empty_tyenv *)
+            assumption. auto.
+          SSSSCase "x <> x". tauto.
+        SSSCase "envs = hdenvs :: tlenvs". simpl in H2. inversion H2.
+      SSCase "i <> x". destruct envs as [|hdenvs tlenvs].
+        SSSCase "envs  = []".
+          simpl. simpl in H3. inversion H3. subst.
+          unfold extend_tyenv in H9. destruct (eq_id_dec x i).
+          SSSSCase "i = x". rewrite e in n. tauto.
+          SSSSCase "i <> x". apply ty_var. assumption.
+        SSSCase "envs = hdenvs :: tlenvs".
+          simpl in H2. inversion H2.
+    SCase "n = S n'". destruct envs as [|hdenvs tlenvs].
+      SSCase "envs = []". simpl in H2. inversion H2.
+      SSCase "envs = hdenvs :: tlenvs".
+        inversion H3. simpl. apply ty_var. assumption.
 
   Case "tabs". admit.
 
