@@ -634,6 +634,9 @@ Proof.
   destruct (eq_id_dec x i); auto.
 Qed.
 
+Hint Resolve extension_preservation.
+
+
 Lemma weakening : forall term envs env0 env0' tau n,
   has_ty (envs ++ [env0]) term tau ->
   extension env0' env0 ->
@@ -691,6 +694,8 @@ Proof.
     apply IHterm with (env0' := env0') (n:= n) in H5; auto.
     inversion H1; auto.
 Qed.
+
+Hint Resolve weakening.
 
 
 Lemma substitutability : forall e n x xsubst taux tau envs env0, 
@@ -765,6 +770,8 @@ Proof.
     simpl. destruct (length envs) as [|n']; auto.
 Qed.
 
+Hint Resolve substitutability.
+
 
 Theorem preservation : forall term n envs tau term',
   tm_lvl term n ->
@@ -825,11 +832,10 @@ Proof.
         inversion H0.
         destruct tlenvs as [|htlenvs ttlenvs].
         SSSCase "tlenvs is []".
-          apply (env_elimination term' 0 empty_tyenv [] hdenvs tau) in H11.
+          apply (env_elimination term' 0 empty_tyenv [] hdenvs tau) in H11; auto.
           admit. (* TODO: apply weakening here. *)
-          simpl. apply H4. apply H5.
         SSSCase "tlenvs is not []".
-        inversion H5.
+          inversion H5.
 Qed.
 
 
