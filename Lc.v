@@ -681,11 +681,26 @@ Proof.
 
   Case "tabs". admit.
 
-  Case "tapp". admit.
+  Case "tapp". intros. inversion H3. inversion H. subst.
+    apply IHe1 with (n := length envs) (x := x) (env0 := env0) (envs := envs) (xsubst := xsubst) (tau := tyfun t1 tau) in H8.
+    apply IHe2 with (n := length envs) (x := x) (env0 := env0) (envs := envs) (xsubst := xsubst) (tau := t1) in H10.
+    simpl. destruct (length envs) as [|n'].
+    apply ty_app with (t1 := t1) (t2 := tau) (tm1 := (subst x xsubst 0 e1)) (tm2 := (subst x xsubst 0 e2)).
+    assumption. assumption.
+    simpl.
+    apply ty_app with (t1 := t1) (t2 := tau) (tm1 := (subst x xsubst (S n') e1)) (tm2 := (subst x xsubst (S n') e2)).
+    assumption. assumption. assumption. assumption. assumption.
+    reflexivity. assumption. assumption. assumption. assumption.
+    reflexivity. assumption.
 
   Case "tfix". admit.
 
-  Case "tbox". admit.
+  Case "tbox". intros. inversion H3. inversion H. subst.
+    apply IHe with (n := 1 + length envs) (x := x) (env0 := env0) (envs := (box_env :: envs)) (xsubst := xsubst) (tau := t) in H7.
+    simpl. destruct (length envs) as [|n'].
+    simpl in H7. apply ty_box in H7. assumption.
+    simpl in H7. apply ty_box in H7. assumption. assumption. assumption. assumption.
+    simpl. reflexivity. assumption.
 
   Case "tunbox". intros. inversion H3. inversion H. subst.
     destruct envs as [|hdenvs tlenvs].
@@ -695,8 +710,7 @@ Proof.
       apply IHe with (n := l) (x := x) (env0 := env0) (envs := tlenvs) (xsubst := xsubst) (tau := (tybox box_env tau)) in H7.
       simpl. apply ty_unbox. rewrite <- minus_n_O. rewrite <- H6.
       assumption. assumption. assumption. assumption.
-      simpl in H11. admit.
-      assumption.
+      simpl in H11. inversion H11. reflexivity. assumption.
 
   Case "trun". intros. inversion H3. inversion H. subst.
     apply IHe with (n := length envs) (x := x) (env0 := env0) (envs := envs) (xsubst := xsubst) (tau := (tybox empty_tyenv tau)) in H7.
