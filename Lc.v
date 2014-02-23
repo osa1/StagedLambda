@@ -640,7 +640,9 @@ Hint Resolve extension_preservation.
 Lemma env_shadowing : forall env x tau tau',
   extend_tyenv x tau (extend_tyenv x tau' env) = extend_tyenv x tau env.
 Proof.
-  admit.
+  intros. apply functional_extensionality. intro. destruct (eq_id_dec x0 x).
+  Case "x0 = x". rewrite e. unfold extend_tyenv. rewrite eq_id. rewrite eq_id. reflexivity.
+  Case "x0 <> x". unfold extend_tyenv. rewrite neq_id; auto. rewrite neq_id; auto. rewrite neq_id; auto.
 Qed.
 
 Hint Resolve env_shadowing.
