@@ -529,7 +529,7 @@ Lemma env_elimination : forall v n envn envs env0 tau,
   has_ty (envn :: envs) v tau.
 Proof.
   intro v. tm_cases (induction v) Case; intros.
-  
+
   Case "tnat". inversion H1. apply ty_con.
 
   Case "tvar". inversion H1. subst. auto.
@@ -552,7 +552,7 @@ Proof.
     apply IHv with (n:= 1+n) in H4.
     apply (ty_box box_env (envn::envs) v t).
     apply H4. inversion H; subst. apply H9. simpl. rewrite H0. reflexivity.
-    
+
   Case "tunbox". inversion H1.
     destruct envs as [|hdenvs tlenvs].
     SCase "envs is []". inversion H. simpl in H0. rewrite <- H0 in H8. omega.
@@ -562,7 +562,7 @@ Proof.
       apply (ty_unbox envn (hdenvs::tlenvs) v tau).
       apply H6. inversion H; subst. simpl. apply H10.
       auto.
-  
+
   Case "trun". inversion H1.
     apply IHv with (n := n) in H4.
     apply (ty_run (envn::envs) v tau).
@@ -715,8 +715,8 @@ Proof.
     apply IHterm with (env0' := env0') (envs := (box_env :: envs)) (n := 1+n) in H5; auto.
     inversion H1; auto. simpl. rewrite H2. reflexivity.
 
-  Case "tunbox". intros. 
-    destruct envs as [|h t]. 
+  Case "tunbox". intros.
+    destruct envs as [|h t].
     SCase "envs = []".
       simpl in H2. rewrite <- H2 in H1. inversion H1.
     SCase "envs = h :: t".
@@ -733,7 +733,7 @@ Qed.
 Hint Resolve weakening.
 
 
-Lemma substitutability : forall e n x xsubst taux tau envs env0, 
+Lemma substitutability : forall e n x xsubst taux tau envs env0,
   tm_lvl e n ->
   tm_lvl xsubst 0 ->
   closed 0 xsubst ->
