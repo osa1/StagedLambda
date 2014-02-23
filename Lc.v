@@ -887,7 +887,8 @@ Proof.
         destruct tlenvs as [|htlenvs ttlenvs].
         SSSCase "tlenvs is []".
           apply (env_elimination term' 0 empty_tyenv [] hdenvs tau) in H11; auto.
-          admit. (* TODO: apply weakening here. *)
+          assert ([] ++ [hdenvs] = [hdenvs]); auto.
+          rewrite <- H3. apply weakening with (env0 := empty_tyenv) (n := 0); auto.
         SSSCase "tlenvs is not []".
           inversion H5.
 Qed.
