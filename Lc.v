@@ -652,7 +652,14 @@ Lemma env_permutability : forall env x y tau tau',
   x <> y ->
   extend_tyenv x tau (extend_tyenv y tau' env) = extend_tyenv y tau' (extend_tyenv x tau env).
 Proof.
-  admit.
+  intros. apply functional_extensionality. intro. unfold extend_tyenv.
+  destruct (eq_id_dec x0 x).
+  Case "x0 = x". rewrite e. rewrite eq_id. rewrite neq_id.
+    rewrite eq_id. reflexivity.
+    auto.
+  Case "x0 <> x". assert (forall (a b : option ty), (if eq_id_dec x x0 then a else b) = b).
+    SCase "proof of assertion". intros. rewrite neq_id; auto.
+    rewrite H0. rewrite H0. reflexivity.
 Qed.
 
 
