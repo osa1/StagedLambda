@@ -662,6 +662,8 @@ Proof.
     rewrite H0. rewrite H0. reflexivity.
 Qed.
 
+Hint Resolve env_permutability.
+
 
 Lemma weakening : forall term envs env0 env0' tau n,
   has_ty (envs ++ [env0]) term tau ->
