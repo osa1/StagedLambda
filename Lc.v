@@ -738,7 +738,6 @@ Hint Resolve weakening.
 Lemma substitutability : forall e n x xsubst taux tau envs env0,
   tm_lvl e n ->
   tm_lvl xsubst 0 ->
-  closed 0 xsubst ->
   length envs = n ->
   has_ty (envs ++ [extend_tyenv x taux env0]) e tau ->
   has_ty [empty_tyenv] xsubst taux ->
@@ -746,81 +745,81 @@ Lemma substitutability : forall e n x xsubst taux tau envs env0,
 Proof.
   intro e. tm_cases (induction e) Case.
 
-  Case "tnat". intros. simpl. destruct n0 as [|n']; inversion H3; apply ty_con.
+  Case "tnat". intros. simpl. destruct n0 as [|n']; inversion H2; apply ty_con.
 
   Case "tvar". intros. simpl. destruct n as [|n'].
     SCase "n = 0". destruct (eq_id_dec i x).
       SSCase "i = x". subst. destruct envs as [|hdenvs tlenvs].
-        SSSCase "envs = []". simpl in H3. simpl.
-          inversion H3. unfold extend_tyenv in H9.
+        SSSCase "envs = []". simpl in *.
+          inversion H2. unfold extend_tyenv in H8.
           destruct (eq_id_dec x x).
-          SSSSCase "x = x". inversion H9; subst.
+          SSSSCase "x = x". inversion H8; subst.
             apply weakening with (term := xsubst) (envs := []) (env0 := empty_tyenv) (env0' := env0) (tau := tau) (n := 0).
             simpl. assumption.
             apply (any_env_extends_empty_env env0).
             assumption. auto.
           SSSSCase "x <> x". tauto.
-        SSSCase "envs = hdenvs :: tlenvs". simpl in H2. inversion H2.
+        SSSCase "envs = hdenvs :: tlenvs". simpl in H1. inversion H1.
       SSCase "i <> x". destruct envs as [|hdenvs tlenvs].
         SSSCase "envs  = []".
-          simpl. simpl in H3. inversion H3. subst.
-          unfold extend_tyenv in H9. destruct (eq_id_dec x i).
+          simpl in *. inversion H2. subst.
+          unfold extend_tyenv in H8. destruct (eq_id_dec x i).
           SSSSCase "i = x". rewrite e in n. tauto.
           SSSSCase "i <> x". apply ty_var. assumption.
         SSSCase "envs = hdenvs :: tlenvs".
-          simpl in H2. inversion H2.
+          simpl in *. inversion H1.
     SCase "n = S n'". destruct envs as [|hdenvs tlenvs].
-      SSCase "envs = []". simpl in H2. inversion H2.
+      SSCase "envs = []". simpl in H1. inversion H1.
       SSCase "envs = hdenvs :: tlenvs".
-        inversion H3. simpl. apply ty_var. assumption.
+        inversion H2. simpl in *. apply ty_var. assumption.
 
-  Case "tabs". intros. inversion H3. inversion H.
+  Case "tabs". intros. inversion H2. inversion H.
     destruct n as [|n'].
     SCase "n = 0". destruct envs as [|hdenvs tlenvs].
       SSCase "envs = []". simpl in *. destruct (eq_id_dec i x).
-        SSSCase "i = x". inversion H5. subst.
-          rewrite env_shadowing in H9.
+        SSSCase "i = x". inversion H4. subst.
+          rewrite env_shadowing in H8.
           apply ty_abs. assumption.
-        SSSCase "i <> x". inversion H5. subst.
-          rewrite env_permutability in H9.
+        SSSCase "i <> x". inversion H4. subst.
+          rewrite env_permutability in H8.
           apply ty_abs.
-          apply IHe with (n := 0) (x := x) (xsubst := xsubst) (taux := taux) (tau := t2) (envs := []) (env0 := (extend_tyenv i t1 env0)) in H9; auto.
+          apply IHe with (n := 0) (x := x) (xsubst := xsubst) (taux := taux) (tau := t2) (envs := []) (env0 := (extend_tyenv i t1 env0)) in H8; auto.
           auto.
-      SSCase "envs = hdenvs :: tlenvs". inversion H2.
+      SSCase "envs = hdenvs :: tlenvs". inversion H1.
     SCase "n = S n'". destruct envs as [|hdenvs tlenvs].
-      SSCase "envs = []". simpl in H2. inversion H2.
-      SSCase "envs = hdenvs :: tlenvs". inversion H5. subst.
+      SSCase "envs = []". simpl in H1. inversion H1.
+      SSCase "envs = hdenvs :: tlenvs". inversion H4. subst.
         simpl in *. apply ty_abs.
-        apply IHe with (n := S n') (x := x) (xsubst := xsubst) (taux := taux) (tau := t2) (envs := extend_tyenv i t1 hdenvs :: tlenvs) (env0 := env0) in H9; auto.
+        apply IHe with (n := S n') (x := x) (xsubst := xsubst) (taux := taux) (tau := t2) (envs := extend_tyenv i t1 hdenvs :: tlenvs) (env0 := env0) in H8; auto.
 
-  Case "tapp". intros. inversion H3. inversion H. subst.
-    apply IHe1 with (n := length envs) (x := x) (env0 := env0) (envs := envs) (xsubst := xsubst) (tau := tyfun t1 tau) in H8; auto.
-    apply IHe2 with (n := length envs) (x := x) (env0 := env0) (envs := envs) (xsubst := xsubst) (tau := t1) in H10; auto.
+  Case "tapp". intros. inversion H2. inversion H. subst.
+    apply IHe1 with (n := length envs) (x := x) (env0 := env0) (envs := envs) (xsubst := xsubst) (tau := tyfun t1 tau) in H7; auto.
+    apply IHe2 with (n := length envs) (x := x) (env0 := env0) (envs := envs) (xsubst := xsubst) (tau := t1) in H9; auto.
     simpl. destruct (length envs) as [|n'].
     apply ty_app with (t1 := t1) (t2 := tau) (tm1 := (subst x xsubst 0 e1)) (tm2 := (subst x xsubst 0 e2)); auto.
     apply ty_app with (t1 := t1) (t2 := tau) (tm1 := (subst x xsubst (S n') e1)) (tm2 := (subst x xsubst (S n') e2)); auto.
 
   Case "tfix". admit.
 
-  Case "tbox". intros. inversion H3. inversion H. subst.
-    apply IHe with (n := 1 + length envs) (x := x) (env0 := env0) (envs := (box_env :: envs)) (xsubst := xsubst) (tau := t) in H7; auto.
+  Case "tbox". intros. inversion H2. inversion H. subst.
+    apply IHe with (n := 1 + length envs) (x := x) (env0 := env0) (envs := (box_env :: envs)) (xsubst := xsubst) (tau := t) in H6; auto.
     simpl. destruct (length envs) as [|n'].
-    simpl in H7. apply ty_box in H7; auto.
-    simpl in H7. apply ty_box in H7; auto.
+    simpl in H6. apply ty_box in H6; auto.
+    simpl in H6. apply ty_box in H6; auto.
 
-  Case "tunbox". intros. inversion H3. inversion H. subst.
+  Case "tunbox". intros. inversion H2. inversion H. subst.
     destruct envs as [|hdenvs tlenvs].
-    SCase "envs = []". simpl in H11. omega.
+    SCase "envs = []". simpl in H10. omega.
     SCase "envs = hdenvs :: tlenvs".
-      inversion H5. rewrite H8 in H7.
-      apply IHe with (n := l) (x := x) (env0 := env0) (envs := tlenvs) (xsubst := xsubst) (tau := (tybox box_env tau)) in H7; auto.
-      simpl. apply ty_unbox. rewrite <- minus_n_O. rewrite <- H6.
+      inversion H4. rewrite H7 in H6.
+      apply IHe with (n := l) (x := x) (env0 := env0) (envs := tlenvs) (xsubst := xsubst) (tau := (tybox box_env tau)) in H6; auto.
+      simpl. apply ty_unbox. rewrite <- minus_n_O. rewrite <- H5.
       assumption.
-      simpl in H11. inversion H11. reflexivity.
+      simpl in H10. inversion H10. reflexivity.
 
-  Case "trun". intros. inversion H3. inversion H. subst.
-    apply IHe with (n := length envs) (x := x) (env0 := env0) (envs := envs) (xsubst := xsubst) (tau := (tybox empty_tyenv tau)) in H7; auto.
-    apply ty_run in H7; auto.
+  Case "trun". intros. inversion H2. inversion H. subst.
+    apply IHe with (n := length envs) (x := x) (env0 := env0) (envs := envs) (xsubst := xsubst) (tau := (tybox empty_tyenv tau)) in H6; auto.
+    apply ty_run in H6; auto.
     simpl. destruct (length envs) as [|n']; auto.
 Qed.
 
@@ -829,10 +828,10 @@ Hint Resolve substitutability.
 
 Theorem preservation : forall term n envs tau term',
   tm_lvl term n ->
-  length envs = 1 + n ->
-  has_ty envs term tau ->
+  length envs = n ->
+  has_ty (envs ++ [empty_tyenv]) term tau ->
   step term n term' ->
-  has_ty envs term' tau.
+  has_ty (envs ++ [empty_tyenv]) term' tau.
 Proof.
   intro term. tm_cases (induction term) Case; intros.
 
@@ -844,53 +843,65 @@ Proof.
     SCase "n = 0". inversion H2.
     SCase "n = n' + 1".
       inversion H2; subst. inversion H1; subst.
-      apply (IHterm (S n') (extend_tyenv i t1 env :: envs0) t2 e') in H8; auto.
+      destruct envs as [|hdenvs tlenvs].
+      SSCase "envs = []". simpl in *. inversion H0.
+      SSCase "envs = hdenvs :: tlenvs". simpl in *. inversion H3. rewrite H6 in *.
+        apply (IHterm (S n') (extend_tyenv i t1 env :: tlenvs) t2 e') in H8; auto.
+        apply ty_abs. simpl in H8; subst; auto.
         inversion H; auto.
 
-  Case "tapp". intros. inversion H2; subst.
-    SCase "e1 can take a step". inversion H1; subst. apply (IHterm1 n envs (tyfun t1 tau) e1') in H6; auto.
-      apply (ty_app envs e1' term2 t1 tau); auto. inversion H; auto.
-    SCase "e2 can take a step". inversion H1; subst. apply (IHterm2 n envs t1 e') in H10; auto.
-      apply (ty_app envs term1 e' t1 tau); auto.
+  Case "tapp". inversion H2; subst.
+    SCase "e1 can take a step". inversion H1; subst. apply (IHterm1 (length envs) envs (tyfun t1 tau) e1') in H5; auto.
+      apply (ty_app (envs ++ [empty_tyenv]) e1' term2 t1 tau); auto. inversion H; auto.
+    SCase "e2 can take a step". inversion H1; subst. apply (IHterm2 (length envs) envs t1 e') in H9; auto.
+      apply (ty_app (envs ++ [empty_tyenv]) term1 e' t1 tau); auto.
       inversion H; auto.
     SCase "application".
       inversion H1. inversion H6. subst.
-      admit.
+      destruct envs as [|hdenvs tlenvs].
+      SSCase "envs = []". simpl in *. inversion H10. rewrite H5 in H12. subst.
+        apply (substitutability e 0 x term2 t1 tau [] empty_tyenv).
+        inversion H. inversion H5; auto.
+        inversion H; auto.
+        simpl; auto.
+        simpl; auto. assumption.
+      SSCase "envs = hdenvs :: tlenvs". inversion H4.
 
     SCase "fix". admit.
 
-  Case "tfix". intros. destruct n as [|n'].
+  Case "tfix". destruct n as [|n'].
     SCase "n = 0". inversion H2.
     SCase "n = n' + 1". inversion H2; subst. inversion H1; subst.
-      apply IHterm with (envs := extend_tyenv i0 t1 (extend_tyenv i (tyfun t1 t2) env) :: envs0) (tau := t2) in H8; auto.
+      destruct envs as [|hdenvs tlenvs].
+      SSCase "envs = []". simpl in *. inversion H0.
+      SSCase "envs = hdenvs :: tlenvs". simpl in *. inversion H3. rewrite H6 in *. rewrite H5 in *.
+        apply IHterm with (envs := extend_tyenv i0 t1 (extend_tyenv i (tyfun t1 t2) hdenvs) :: tlenvs) (tau := t2) (n := S n') (term' := e') in H9; auto.
         inversion H; auto.
 
-  Case "tbox". intros. inversion H2; subst.
-    inversion H1. apply (IHterm (1 + n) (box_env :: envs) t e') in H4; auto.
-    inversion H; auto. simpl. rewrite H0. reflexivity.
+  Case "tbox". inversion H1; subst.
+    inversion H2. apply (IHterm (1 + (length envs)) (box_env :: envs) t e') in H5; auto.
+    inversion H; auto.
 
-  Case "tunbox". intros. destruct n as [|n'].
+  Case "tunbox". destruct n as [|n'].
     SCase "n = 0". inversion H2.
     SCase "n = n' + 1". inversion H2; subst.
-      SSCase "s_unb1". inversion H1. apply IHterm with (n := n') (term' := e') in H6; auto.
-        inversion H; auto. subst. auto.
+      SSCase "s_unb1". inversion H1.
+        destruct envs as [|hdenvs tlenvs].
+        SSSCase "envs = []". inversion H0.
+        SSSCase "envs = hdenvs :: tlenvs". inversion H3. rewrite H10 in *. rewrite H9 in *.
+        apply IHterm with (n := n') (term' := e') in H6; auto.
+        inversion H; auto.
       SSCase "s_unb". inversion H1. inversion H6. apply H11.
 
-  Case "trun". intros. inversion H2; subst.
-    SCase "s_run1". inversion H1; subst. apply IHterm with (n := n) (term' := e') in H6; auto.
+  Case "trun". inversion H2; subst.
+    SCase "s_run1". inversion H1; subst. apply IHterm with (n := length envs) (term' := e') in H5; auto.
       inversion H; auto.
     SCase "s_run". inversion H1. inversion H6. subst.
       destruct envs as [|hdenvs tlenvs].
-      SSCase "envs is []". inversion H0.
+      SSCase "envs is []".
+        apply (env_elimination term' 0 empty_tyenv [] empty_tyenv tau) in H11; auto.
       SSCase "envs is hdenvs::tlenvs".
-        inversion H0.
-        destruct tlenvs as [|htlenvs ttlenvs].
-        SSSCase "tlenvs is []".
-          apply (env_elimination term' 0 empty_tyenv [] hdenvs tau) in H11; auto.
-          assert ([] ++ [hdenvs] = [hdenvs]); auto.
-          rewrite <- H3. apply weakening with (env0 := empty_tyenv) (n := 0); auto.
-        SSSCase "tlenvs is not []".
-          inversion H5.
+        inversion H5.
 Qed.
 
 
