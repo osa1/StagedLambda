@@ -872,11 +872,13 @@ Proof.
       destruct envs as [|hdenvs tlenvs].
       SSCase "envs = []". simpl in *. inversion H10. subst.
         apply (substitutability (subst f (tfix f x e) 0 e) 0 x term2 t1 tau [] empty_tyenv); auto.
-        admit.
+        admit. (* TODO: we need a lemma that shows substitution does not change term levels *)
         apply (substitutability e 0 f (tfix f x e) (tyfun t1 tau) tau [] (extend_tyenv x t1 empty_tyenv)); auto.
         inversion H; subst. inversion H5; auto.
         inversion H; auto.
-        simpl. admit. (* TODO: apply env_permutability here *)
+        simpl. destruct (eq_id_dec x f).
+          SSSCase "x == f". subst. admit.
+          SSSCase "x <> f". rewrite env_permutability; auto.
       SSCase "envs = hdenvs :: tlenvs". inversion H4.
 
   Case "tfix". destruct n as [|n'].
