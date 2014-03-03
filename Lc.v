@@ -864,7 +864,17 @@ Proof.
         inversion H. inversion H5; auto.
       SSCase "envs = hdenvs :: tlenvs". inversion H4.
 
-    SCase "fix". admit.
+    SCase "fix". clear IHterm1 IHterm2.
+      inversion H1. inversion H6. subst.
+      destruct envs as [|hdenvs tlenvs].
+      SSCase "envs = []". simpl in *. inversion H10. subst.
+        apply (substitutability (subst f (tfix f x e) 0 e) 0 x term2 t1 tau [] empty_tyenv); auto.
+        admit.
+        apply (substitutability e 0 f (tfix f x e) (tyfun t1 tau) tau [] (extend_tyenv x t1 empty_tyenv)); auto.
+        inversion H; subst. inversion H5; auto.
+        inversion H; auto.
+        simpl. admit. (* TODO: apply env_permutability here *)
+      SSCase "envs = hdenvs :: tlenvs". inversion H4.
 
   Case "tfix". destruct n as [|n'].
     SCase "n = 0". inversion H2.
