@@ -851,15 +851,18 @@ Proof.
         inversion H; auto.
 
   Case "tapp". inversion H2; subst.
-    SCase "e1 can take a step". inversion H1; subst. apply (IHterm1 (length envs) envs (tyfun t1 tau) e1') in H5; auto.
+    SCase "term1 can take a step".
+      inversion H1; subst.
+      apply (IHterm1 (length envs) envs (tyfun t1 tau) e1') in H5; auto.
       apply (ty_app (envs ++ [empty_tyenv]) e1' term2 t1 tau); auto. inversion H; auto.
-    SCase "e2 can take a step". inversion H1; subst. apply (IHterm2 (length envs) envs t1 e') in H9; auto.
+    SCase "term2 can take a step".
+      inversion H1; subst. apply (IHterm2 (length envs) envs t1 e') in H9; auto.
       apply (ty_app (envs ++ [empty_tyenv]) term1 e' t1 tau); auto.
       inversion H; auto.
-    SCase "application".
+    SCase "application". clear IHterm1 IHterm2.
       inversion H1. inversion H6. subst.
       destruct envs as [|hdenvs tlenvs].
-      SSCase "envs = []". simpl in *. inversion H10. rewrite H5 in H12. subst.
+      SSCase "envs = []". simpl in *. inversion H10. subst.
         apply (substitutability e 0 x term2 t1 tau [] empty_tyenv); auto.
         inversion H. inversion H5; auto.
       SSCase "envs = hdenvs :: tlenvs". inversion H4.
