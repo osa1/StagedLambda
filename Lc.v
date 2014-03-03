@@ -860,11 +860,8 @@ Proof.
       inversion H1. inversion H6. subst.
       destruct envs as [|hdenvs tlenvs].
       SSCase "envs = []". simpl in *. inversion H10. rewrite H5 in H12. subst.
-        apply (substitutability e 0 x term2 t1 tau [] empty_tyenv).
+        apply (substitutability e 0 x term2 t1 tau [] empty_tyenv); auto.
         inversion H. inversion H5; auto.
-        inversion H; auto.
-        simpl; auto.
-        simpl; auto. assumption.
       SSCase "envs = hdenvs :: tlenvs". inversion H4.
 
     SCase "fix". admit.
