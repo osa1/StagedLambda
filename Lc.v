@@ -41,7 +41,7 @@ Inductive tm_lvl : tm -> nat -> Prop :=
 | l_app : forall t1 t2 l,
     tm_lvl t1 l -> tm_lvl t2 l -> tm_lvl (tapp t1 t2) l
 | l_fix : forall i1 i2 body l,
-    tm_lvl body l -> tm_lvl (tfix i1 i2 body) l
+    i1 <> i2 -> tm_lvl body l -> tm_lvl (tfix i1 i2 body) l
 | l_box : forall body l,
     tm_lvl body (1 + l) -> tm_lvl (tbox body) l
 | l_unbox : forall body l,
@@ -68,7 +68,7 @@ Inductive value : nat -> tm -> Prop :=
 
 (* stage 0 values *)
 | vabs_0 : forall v t, tm_lvl t 0 -> value 0 (tabs v t)
-| vfix_0 : forall i1 i2 t, tm_lvl t 0 -> value 0 (tfix i1 i2 t)
+| vfix_0 : forall i1 i2 t, i1 <> i2 -> tm_lvl t 0 -> value 0 (tfix i1 i2 t)
 | vbox_0 : forall v, value 1 v -> value 0 (tbox v)
 
 (* stage n > 0 values *)
@@ -79,7 +79,7 @@ Inductive value : nat -> tm -> Prop :=
 | vapp_n : forall n t1 t2,
     n > 0 -> value n t1 -> value n t2 -> value n (tapp t1 t2)
 | vfix_n : forall f x v n,
-    n > 0 -> value n v -> value n (tfix f x v)
+    n > 0 -> f <> x -> value n v -> value n (tfix f x v)
 | vbox_n : forall n v,
     n > 0 -> value (1+n) v -> value n (tbox v)
 | vunbox_n : forall n v,
@@ -111,8 +111,8 @@ Proof.
   Case "tapp". intros. inversion H; subst; auto.
   Case "tfix". intros lvl vd.
     destruct lvl.
-    SCase "lvl = 0". apply l_fix. inversion vd; subst; auto.
-    SCase "lvl = n + 1". apply l_fix. inversion vd; subst; auto.
+    SCase "lvl = 0". apply l_fix; inversion vd; auto.
+    SCase "lvl = n + 1". apply l_fix; inversion vd; auto.
   Case "tbox". intros. apply l_box. inversion H; subst; auto.
   Case "tunbox". intros.
     destruct lvl.
@@ -130,14 +130,10 @@ Lemma values_are_terms' :
 Proof.
   intros term. tm_cases (induction term) Case; auto.
   Case "tabs". intros lvl vd.
-    destruct lvl.
-    SCase "lvl = 0". apply l_abs. inversion vd; subst; auto.
-    SCase "lvl = n + 1". apply l_abs. inversion vd; subst; auto.
+    destruct lvl; apply l_abs; inversion vd; auto.
   Case "tapp". intros. inversion H; subst; auto.
   Case "tfix". intros lvl vd.
-    destruct lvl.
-    SCase "lvl = 0". apply l_fix. inversion vd; subst; auto.
-    SCase "lvl = n + 1". apply l_fix. inversion vd; subst; auto.
+    destruct lvl; apply l_fix; inversion vd; auto.
   Case "tbox". intros. apply l_box. inversion H; subst; auto.
   Case "tunbox". intros. destruct lvl.
     SCase "lvl = 0". inversion H; subst. inversion H1. inversion H2.
@@ -449,7 +445,7 @@ Proof.
       right. inversion H5. exists (tapp x term2). apply s_app1. apply H6.
 
   Case "tfix". intros tau n envs tlvld td ld. destruct n as [|n'].
-    SCase "n = 0". left. apply vfix_0. inversion tlvld; subst. apply H3.
+    SCase "n = 0". left. apply vfix_0; inversion tlvld; auto.
     SCase "n = n' + 1". inversion td; subst.
       destruct envs as [|head tail].
         inversion ld.
@@ -457,7 +453,7 @@ Proof.
       inversion tlvld; subst. auto.
       simpl in H. inversion H. rewrite H1, H2 in H4. auto.
       apply ld.
-      left. apply vfix_n. omega. apply H0.
+      left. apply vfix_n; auto. omega. inversion tlvld; auto.
       right. inversion H0. exists (tfix i i0 x). apply s_fix. apply H1.
 
   Case "tbox". intros tau n envs tlvld td ld.
@@ -877,7 +873,9 @@ Proof.
         inversion H; subst. inversion H5; auto.
         inversion H; auto.
         simpl. destruct (eq_id_dec x f).
-          SSSCase "x == f". subst. admit.
+          SSSCase "x == f". subst. rewrite env_permutability.
+            auto.
+            inversion H. inversion H5. apply H17.
           SSSCase "x <> f". rewrite env_permutability; auto.
       SSCase "envs = hdenvs :: tlenvs". inversion H4.
 
