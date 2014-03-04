@@ -51,6 +51,13 @@ Inductive tm_lvl : tm -> nat -> Prop :=
 
 Hint Constructors tm_lvl.
 
+Tactic Notation "tm_lvl_cases" tactic(first) ident(c) :=
+  first;
+  [ Case_aux c "l_nat" | Case_aux c "l_var"
+  | Case_aux c "l_abs" | Case_aux c "l_app"
+  | Case_aux c "l_fix" | Case_aux c "l_box"
+  | Case_aux c "l_unbox" | Case_aux c "l_run" ].
+
 
 Lemma tm_lvl_inc :
   forall term lvl, tm_lvl term lvl -> tm_lvl term (1 + lvl).
@@ -180,6 +187,59 @@ Fixpoint subst (x : id) (s : tm) (n : nat) (t : tm) : tm :=
   end.
 
 Hint Resolve subst.
+
+
+Lemma subst_preserves_levels : forall x s n t t',
+  tm_lvl t n ->
+  tm_lvl s 0 ->
+  subst x s n t = t' ->
+  tm_lvl t' n.
+Proof.
+  intros. generalize dependent s. generalize dependent x. generalize dependent t'.
+  tm_lvl_cases (induction H) Case; intros.
+  Case "l_nat". destruct l as [|l'].
+    simpl in H1. subst. constructor.
+    simpl in H1. subst. constructor.
+  Case "l_var". destruct l as [|l'].
+    simpl in H1. destruct (eq_id_dec i x).
+      rewrite H1 in H0. assumption.
+      subst. constructor.
+    simpl in H1. subst. constructor.
+  Case "l_abs". destruct l as [|l'].
+    simpl in H1. destruct (eq_id_dec i x).
+      subst. auto.
+      subst. apply l_abs. apply IHtm_lvl with (x := x) (s := s); auto.
+    simpl in H1. subst. constructor. apply IHtm_lvl with (x := x) (s := s); auto.
+  Case "l_app". destruct l as [|l'].
+    simpl in H2. subst. constructor.
+      apply IHtm_lvl1 with (x := x) (s := s); auto.
+      apply IHtm_lvl2 with (x := x) (s := s); auto.
+    simpl in H2. subst. constructor.
+      apply IHtm_lvl1 with (x := x) (s := s); auto.
+      apply IHtm_lvl2 with (x := x) (s := s); auto.
+  Case "l_fix". destruct l as [|l'].
+    SCase "l = 0".
+      simpl in H2. destruct (eq_id_dec i1 x).
+        subst. auto.
+        subst. destruct (eq_id_dec i2 x).
+          subst. auto.
+          constructor; auto. apply IHtm_lvl with (x := x) (s := s); auto.
+    SCase "l = S n'".
+      simpl in H2. destruct (eq_id_dec i1 x).
+        subst. constructor; auto. apply IHtm_lvl with (x := x) (s := s); auto.
+        subst. destruct (eq_id_dec i1 i2).
+          subst. constructor; auto. apply IHtm_lvl with (x := x) (s := s); auto.
+          constructor; auto. apply IHtm_lvl with (x := x) (s := s); auto.
+  Case "l_box". destruct l as [|l'].
+    simpl in H1. subst. constructor. apply IHtm_lvl with (x := x) (s := s); auto.
+    simpl in H1. subst. constructor. apply IHtm_lvl with (x := x) (s := s); auto.
+  Case "l_unbox". destruct l as [|l'].
+    simpl in H1. subst. constructor. apply IHtm_lvl with (x := x) (s := s); auto.
+    simpl in H1. subst. constructor. apply IHtm_lvl with (x := x) (s := s); auto.
+  Case "l_run". destruct l as [|l'].
+    simpl in H1. subst. constructor. apply IHtm_lvl with (x := x) (s := s); auto.
+    simpl in H1. subst. constructor. apply IHtm_lvl with (x := x) (s := s); auto.
+Qed.
 
 
 Fixpoint fvs (n : nat) (t : tm) : set id :=
@@ -868,7 +928,12 @@ Proof.
       destruct envs as [|hdenvs tlenvs].
       SSCase "envs = []". simpl in *. inversion H10. subst.
         apply (substitutability (subst f (tfix f x e) 0 e) 0 x term2 t1 tau [] empty_tyenv); auto.
-        admit. (* TODO: we need a lemma that shows substitution does not change term levels *)
+        Check subst_preserves_levels.
+        apply subst_preserves_levels with (x := f) (s := tfix f x e) (n := 0) (t := e); auto.
+          inversion H; subst. inversion H5; auto.
+          apply l_fix.
+            inversion H. inversion H5. auto.
+            inversion H; subst. inversion H5; auto.
         apply (substitutability e 0 f (tfix f x e) (tyfun t1 tau) tau [] (extend_tyenv x t1 empty_tyenv)); auto.
         inversion H; subst. inversion H5; auto.
         inversion H; auto.
