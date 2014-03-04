@@ -928,7 +928,6 @@ Proof.
       destruct envs as [|hdenvs tlenvs].
       SSCase "envs = []". simpl in *. inversion H10. subst.
         apply (substitutability (subst f (tfix f x e) 0 e) 0 x term2 t1 tau [] empty_tyenv); auto.
-        Check subst_preserves_levels.
         apply subst_preserves_levels with (x := f) (s := tfix f x e) (n := 0) (t := e); auto.
           inversion H; subst. inversion H5; auto.
           apply l_fix.
