@@ -837,7 +837,42 @@ Proof.
     apply ty_app with (t1 := t1) (t2 := tau) (tm1 := subst x xsubst 0 e1) (tm2 := subst x xsubst 0 e2); auto.
     apply ty_app with (t1 := t1) (t2 := tau) (tm1 := subst x xsubst (S n') e1) (tm2 := subst x xsubst (S n') e2); auto.
 
-  Case "tfix". admit.
+  Case "tfix". intros.
+    inversion H2; clear H2.
+    destruct (eq_id_dec x i).
+    SCase "x = i". rewrite e0. simpl. rewrite eq_id.
+      destruct n.
+      SSCase "n = 0".
+        destruct envs as [|hdenvs tlenvs].
+        SSSCase "envs = []". apply ty_fix. inversion H4. rewrite H11 in *. rewrite H10 in *.
+          rewrite e0 in H9. rewrite env_shadowing in H9. apply H9.
+        SSSCase "envs = hdenvs :: tlenvs". inversion H1.
+      SSCase "n = S _".
+        destruct envs as [|hdenvs tlenvs].
+        SSSCase "envs = []". inversion H1.
+        SSSCase "envs = hdenvs :: tlenvs". admit.
+    SCase "x <> i". destruct (eq_id_dec x i0).
+      SSCase "x = i0". simpl. rewrite neq_id; auto. rewrite e0. rewrite eq_id; auto. destruct n.
+        SSSCase "n = 0".
+          destruct envs as [|hdenvs tlenvs].
+          SSSSCase "envs = []". admit.
+          SSSSCase "envs = hdenvs :: tlenvs". inversion H1.
+        SSSCase "n = S _".
+          destruct envs as [|hdenvs tlenvs].
+          SSSSCase "envs = []". inversion H1.
+          SSSSCase "envs = hdenvs :: tlenvs". admit.
+      SSCase "x <> i0". simpl. rewrite neq_id; auto. rewrite neq_id; auto. destruct n.
+        SSSCase "n = 0".
+          destruct envs as [|hdenvs tlenvs].
+          SSSSCase "envs = []". simpl in *. inversion H4. rewrite H10 in *; clear H10. rewrite H11 in *; clear H11.
+            apply ty_fix. apply (IHe 0 x xsubst taux t2 [] (extend_tyenv i0 t1 (extend_tyenv i (tyfun t1 t2) env0))); auto.
+            inversion H; auto.
+            simpl. rewrite env_permutability.
+              assert ((extend_tyenv x taux (extend_tyenv i (tyfun t1 t2) env0)) =
+                      (extend_tyenv i (tyfun t1 t2) (extend_tyenv x taux env0))). rewrite env_permutability; auto.
+              rewrite H2. apply H9. auto.
+          SSSSCase "envs = _ :: _". inversion H1.
+        SSSCase "n = S _". admit.
 
   Case "tbox". intros. inversion H2. inversion H. subst.
     apply IHe with (n := 1 + length envs) (x := x) (env0 := env0) (envs := box_env :: envs) (xsubst := xsubst) (tau := t) in H6; auto.
