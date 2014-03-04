@@ -357,24 +357,6 @@ Proof.
 Qed.
 
 
-Lemma empty_union : forall set1 set2,
-  set_union eq_id_dec set1 set2 = nil <-> set1 = nil /\ set2 = nil.
-Proof.
-  intro set1. destruct set1 as [|h1 t1].
-  Case "set1 = nil". intros. destruct set2 as [|h2 t2].
-    SCase "set2 = nil". split; auto.
-    SCase "set2 = h2 :: t2". split; intros.
-      split. reflexivity. simpl in H. apply set_add_not_empty in H. inversion H.
-      inversion H. inversion H1.
-  Case "set1 = h1 :: t1". intros. destruct set2 as [|h2 t2].
-    SCase "set2 = nil". split; intros; auto. inversion H. inversion H0.
-    SCase "set2 = h2 :: t2". split; intros.
-      simpl in H. apply set_add_not_empty in H. inversion H.
-      inversion H. inversion H0.
-Qed.
-
-
-
 Inductive ty :=
 | tynat : ty
 | tyfun : ty -> ty -> ty
@@ -605,7 +587,7 @@ Proof.
     apply IHv with (n := n) in H8. auto. subst. inversion H; auto. auto.
 
   Case "tbox". inversion H1.
-    apply IHv with (n:= 1+n) in H4.
+    apply IHv with (n := 1+n) in H4.
     apply (ty_box box_env (envn::envs) v t).
     apply H4. inversion H; subst. apply H9. simpl. rewrite H0. reflexivity.
 
@@ -614,7 +596,7 @@ Proof.
     SCase "envs is []". inversion H. simpl in H0. rewrite <- H0 in H8. omega.
     SCase "envs is hd::tl".
       destruct n as [|n']. inversion H. omega.
-      apply IHv with (n := n') (envn := hdenvs) (envs := tlenvs) (tau := (tybox envn tau)) in H6.
+      apply IHv with (n := n') (envn := hdenvs) (envs := tlenvs) (tau := tybox envn tau) in H6.
       apply (ty_unbox envn (hdenvs::tlenvs) v tau).
       apply H6. inversion H; subst. simpl. apply H10.
       auto.
@@ -770,7 +752,7 @@ Proof.
         inversion H1; auto.
 
   Case "tbox". intros. inversion H.
-    apply IHterm with (env0' := env0') (envs := (box_env :: envs)) (n := 1+n) in H5; auto.
+    apply IHterm with (env0' := env0') (envs := box_env :: envs) (n := 1+n) in H5; auto.
     inversion H1; auto. simpl. rewrite H2. reflexivity.
 
   Case "tunbox". intros.
@@ -784,7 +766,7 @@ Proof.
       destruct l as [|l']; auto. simpl. apply minus_n_O.
 
   Case "trun". intros. inversion H.
-    apply IHterm with (env0' := env0') (n:= n) in H5; auto.
+    apply IHterm with (env0' := env0') (n := n) in H5; auto.
     inversion H1; auto.
 Qed.
 
@@ -852,13 +834,13 @@ Proof.
     apply IHe1 with (n := length envs) (x := x) (env0 := env0) (envs := envs) (xsubst := xsubst) (tau := tyfun t1 tau) in H7; auto.
     apply IHe2 with (n := length envs) (x := x) (env0 := env0) (envs := envs) (xsubst := xsubst) (tau := t1) in H9; auto.
     simpl. destruct (length envs) as [|n'].
-    apply ty_app with (t1 := t1) (t2 := tau) (tm1 := (subst x xsubst 0 e1)) (tm2 := (subst x xsubst 0 e2)); auto.
-    apply ty_app with (t1 := t1) (t2 := tau) (tm1 := (subst x xsubst (S n') e1)) (tm2 := (subst x xsubst (S n') e2)); auto.
+    apply ty_app with (t1 := t1) (t2 := tau) (tm1 := subst x xsubst 0 e1) (tm2 := subst x xsubst 0 e2); auto.
+    apply ty_app with (t1 := t1) (t2 := tau) (tm1 := subst x xsubst (S n') e1) (tm2 := subst x xsubst (S n') e2); auto.
 
   Case "tfix". admit.
 
   Case "tbox". intros. inversion H2. inversion H. subst.
-    apply IHe with (n := 1 + length envs) (x := x) (env0 := env0) (envs := (box_env :: envs)) (xsubst := xsubst) (tau := t) in H6; auto.
+    apply IHe with (n := 1 + length envs) (x := x) (env0 := env0) (envs := box_env :: envs) (xsubst := xsubst) (tau := t) in H6; auto.
     simpl. destruct (length envs) as [|n'].
     simpl in H6. apply ty_box in H6; auto.
     simpl in H6. apply ty_box in H6; auto.
@@ -874,7 +856,7 @@ Proof.
       simpl in H10. inversion H10. reflexivity.
 
   Case "trun". intros. inversion H2. inversion H. subst.
-    apply IHe with (n := length envs) (x := x) (env0 := env0) (envs := envs) (xsubst := xsubst) (tau := (tybox empty_tyenv tau)) in H6; auto.
+    apply IHe with (n := length envs) (x := x) (env0 := env0) (envs := envs) (xsubst := xsubst) (tau := tybox empty_tyenv tau) in H6; auto.
     apply ty_run in H6; auto.
     simpl. destruct (length envs) as [|n']; auto.
 Qed.
