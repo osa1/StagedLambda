@@ -864,7 +864,11 @@ Proof.
       SSCase "x = i0". simpl. rewrite neq_id; auto. rewrite e0. rewrite eq_id; auto. destruct n.
         SSSCase "n = 0".
           destruct envs as [|hdenvs tlenvs].
-          SSSSCase "envs = []". admit.
+          SSSSCase "envs = []". apply ty_fix. inversion H4. rewrite H11 in *. rewrite H10 in *. rewrite e0 in n0.
+            rewrite e0 in H9.
+            rewrite env_permutability in H9; auto.
+            rewrite env_shadowing in H9; auto.
+            rewrite env_permutability in H9; auto.
           SSSSCase "envs = hdenvs :: tlenvs". inversion H1.
         SSSCase "n = S _".
           destruct envs as [|hdenvs tlenvs].
@@ -881,7 +885,19 @@ Proof.
                       (extend_tyenv i (tyfun t1 t2) (extend_tyenv x taux env0))). rewrite env_permutability; auto.
               rewrite H2. apply H9. auto.
           SSSSCase "envs = _ :: _". inversion H1.
-        SSSCase "n = S _". admit.
+        SSSCase "n = S _".
+          destruct envs as [|hdenvs tlenvs].
+          SSSSCase "envs = []". inversion H1.
+          SSSSCase "envs = hdenvs :: tlenvs". apply ty_fix.
+            assert ((extend_tyenv i0 t1 (extend_tyenv i (tyfun t1 t2) hdenvs)
+                       :: (fix app (l m : list tyenv) {struct l} : list tyenv :=
+                             match l with
+                             | [] => m
+                             | a :: l1 => a :: app l1 m
+                             end) tlenvs [env0]) =
+                    (extend_tyenv i0 t1 (extend_tyenv i (tyfun t1 t2) hdenvs) :: tlenvs ++ [env0])). auto.
+            rewrite H2; clear H2. apply (IHe (S n) x xsubst taux t2 (extend_tyenv i0 t1 (extend_tyenv i (tyfun t1 t2) hdenvs) :: tlenvs) env0); auto.
+            inversion H; auto. inversion H4; subst. auto.
 
   Case "tbox". intros. inversion H2. inversion H. subst.
     apply IHe with (n := 1 + length envs) (x := x) (env0 := env0) (envs := box_env :: envs) (xsubst := xsubst) (tau := t) in H6; auto.
