@@ -850,7 +850,16 @@ Proof.
       SSCase "n = S _".
         destruct envs as [|hdenvs tlenvs].
         SSSCase "envs = []". inversion H1.
-        SSSCase "envs = hdenvs :: tlenvs". admit.
+        SSSCase "envs = hdenvs :: tlenvs". apply ty_fix.
+          assert ((extend_tyenv i0 t1 (extend_tyenv i (tyfun t1 t2) hdenvs)
+                     :: (fix app (l m : list tyenv) {struct l} : list tyenv :=
+                           match l with
+                           | [] => m
+                           | a :: l1 => a :: app l1 m
+                           end) tlenvs [env0]) =
+                  (extend_tyenv i0 t1 (extend_tyenv i (tyfun t1 t2) hdenvs) :: tlenvs ++ [env0])). auto.
+          rewrite H2. apply (IHe (S n) i xsubst taux t2 (extend_tyenv i0 t1 (extend_tyenv i (tyfun t1 t2) hdenvs) :: tlenvs) env0); auto.
+          inversion H; auto. inversion H4; subst. auto.
     SCase "x <> i". destruct (eq_id_dec x i0).
       SSCase "x = i0". simpl. rewrite neq_id; auto. rewrite e0. rewrite eq_id; auto. destruct n.
         SSSCase "n = 0".
