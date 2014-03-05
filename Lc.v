@@ -866,7 +866,10 @@ Proof.
         SSSCase "n = S _".
           destruct envs as [|hdenvs tlenvs].
           SSSSCase "envs = []". inversion H1.
-          SSSSCase "envs = hdenvs :: tlenvs". admit.
+          SSSSCase "envs = hdenvs :: tlenvs". simpl. apply ty_fix.
+            apply (IHe (S n) i0 xsubst taux t2 (extend_tyenv i0 t1 (extend_tyenv i (tyfun t1 t2) hdenvs) :: tlenvs) env0); auto.
+            inversion H; auto.
+            simpl. inversion H4; subst. auto.
       SSCase "x <> i0". simpl. rewrite neq_id; auto. rewrite neq_id; auto. destruct n.
         SSSCase "n = 0".
           destruct envs as [|hdenvs tlenvs].
