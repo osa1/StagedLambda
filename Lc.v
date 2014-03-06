@@ -122,26 +122,6 @@ Qed.
 Hint Resolve values_are_terms.
 
 
-Lemma values_are_terms' :
-  forall term lvl, value (1+lvl) term -> tm_lvl term lvl.
-Proof.
-  intros term. tm_cases (induction term) Case; auto.
-  Case "tabs". intros lvl vd.
-    destruct lvl; apply l_abs; inversion vd; auto.
-  Case "tapp". intros. inversion H; subst; auto.
-  Case "tfix". intros lvl vd.
-    destruct lvl; apply l_fix; inversion vd; auto.
-  Case "tbox". intros. apply l_box. inversion H; subst; auto.
-  Case "tunbox". intros. destruct lvl.
-    SCase "lvl = 0". inversion H; subst. inversion H1. inversion H2.
-    SCase "lvl = n + 1". apply l_unbox. inversion H; subst. apply IHterm. auto.
-  Case "trun".
-    intros. inversion H; subst; auto.
-Qed.
-
-Hint Resolve values_are_terms'.
-
-
 Fixpoint subst (x : id) (s : tm) (n : nat) (t : tm) : tm :=
   match n with
   | 0 =>
