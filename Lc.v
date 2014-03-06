@@ -537,45 +537,6 @@ Qed.
 Hint Resolve env_elimination.
 
 
-Lemma env_addition : forall term n envn envs env0 tau,
-  tm_lvl term n ->
-  length envs = n ->
-  has_ty (envn :: envs) term tau ->
-  has_ty ((envn :: envs) ++ [env0]) term tau.
-Proof.
-  intro v. tm_cases (induction v) Case; intros; inversion H1; auto.
-
-  Case "tvar". apply ty_var. apply H6.
-
-  Case "tabs". subst.
-    apply ty_abs. apply IHv with (n := length envs) (env0 := env0) in H7; auto.
-    inversion H; auto.
-
-  Case "tapp". subst. inversion H; subst.
-    apply IHv1 with (n := length envs) (env0 := env0) in H5; auto.
-    apply IHv2 with (n := length envs) (env0 := env0) in H7; auto.
-    apply ty_app with (t1 := t1); auto.
-
-  Case "tfix". subst.
-    apply ty_fix. apply IHv with (n := length envs) (env0 := env0) in H8; auto.
-    inversion H; auto.
-
-  Case "tbox". apply IHv with (n := 1 + n) (env0 := env0) in H4; auto.
-    inversion H; auto. inversion H0; auto.
-
-  Case "tunbox". destruct envs as [|hd tl].
-    SCase "envs = []". inversion H. rewrite <- H9 in H0. inversion H0.
-    SCase "envs = hd :: tl". apply IHv with (n := n-1) (env0 := env0) in H6.
-      apply ty_unbox; auto. inversion H; subst. simpl. rewrite <- minus_n_O. auto. simpl in H0.
-        destruct n as [|n']. inversion H0. rewrite <- H0. simpl. omega.
-
-  Case "trun". apply IHv with (n := n) (env0 := env0) in H4; auto.
-    inversion H; auto.
-Qed.
-
-Hint Resolve env_addition.
-
-
 Definition extension := fun (e1 e2 : tyenv) => forall i tau,
   e2 i = Some tau -> e1 i = Some tau.
 
