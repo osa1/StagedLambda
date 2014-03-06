@@ -59,16 +59,6 @@ Tactic Notation "tm_lvl_cases" tactic(first) ident(c) :=
   | Case_aux c "l_unbox" | Case_aux c "l_run" ].
 
 
-Lemma tm_lvl_inc :
-  forall term lvl, tm_lvl term lvl -> tm_lvl term (1 + lvl).
-Proof.
-  intros term.
-  tm_cases (induction term) Case; intros lvl td; inversion td; subst; auto.
-Qed.
-
-Hint Resolve tm_lvl_inc.
-
-
 Inductive value : nat -> tm -> Prop :=
 (* nats are values in all stages *)
 | vnat : forall n l, value l (tnat n)
@@ -271,12 +261,6 @@ Fixpoint fvs (n : nat) (t : tm) : set id :=
 Hint Resolve fvs.
 
 
-Definition closed (n : nat) (t : tm) : Prop :=
-  fvs n t = empty_set id.
-
-Hint Unfold closed.
-
-
 Inductive step : tm -> nat -> tm -> Prop :=
 | s_app1 : forall e1 e1' e2 n,
     step e1 n e1' ->
@@ -326,37 +310,6 @@ Tactic Notation "step_cases" tactic(first) ident(c) :=
   | Case_aux c "s_fix" ].
 
 
-Definition example1 := tapp (tabs (Id 0) (tvar (Id 0))) (tnat 42).
-
-Example example1_evaluation :
-  step example1 0 (tnat 42).
-Proof.
-  unfold example1. constructor. constructor.
-Qed.
-
-
-Definition example2 := tunbox (tbox (tnat 42)).
-
-Example example2_evaluation :
-  step example2 1 (tnat 42).
-Proof.
-  unfold example2. auto.
-Qed.
-
-
-Definition example3 := trun (tbox (tnat 42)).
-
-Example example3_evaluation :
-  step example3 0 (tnat 42).
-Proof.
-  unfold example3.
-  remember (tunbox (tbox (tnat 42))) as rhs.
-  assert (step rhs 1 (tnat 42)).
-  Case "proof of assertion". rewrite Heqrhs. apply example2_evaluation.
-  constructor. auto.
-Qed.
-
-
 Inductive ty :=
 | tynat : ty
 | tyfun : ty -> ty -> ty
@@ -370,9 +323,6 @@ Definition extend_tyenv : id -> ty -> tyenv -> tyenv :=
   fun i t e => fun i' => if eq_id_dec i i'
                          then Some t
                          else e i'.
-
-Definition singleton_env : id -> ty -> tyenv :=
-  fun i t => extend_tyenv i t empty_tyenv.
 
 
 Inductive has_ty : list tyenv -> tm -> ty -> Prop :=
@@ -409,29 +359,6 @@ Tactic Notation "ty_cases" tactic(first) ident(c) :=
   | Case_aux c "ty_abs" | Case_aux c "ty_fix"
   | Case_aux c "ty_app" | Case_aux c "ty_box"
   | Case_aux c "ty_unbox" | Case_aux c "ty_run" ].
-
-
-Definition stuck : tm -> Prop :=
-  fun t => forall t', not (step t 0 t').
-
-Hint Unfold stuck.
-
-
-Example example_stuck1 : stuck (tapp (tnat 1) (tnat 2)).
-Proof.
-  unfold stuck. unfold not. intros t'.
-  remember (tnat 1) as t1. remember (tnat 2) as t2. remember (tapp t1 t2) as tapp.
-  intros eval.
-  step_cases (induction eval) Case; inversion Heqtapp; clear Heqtapp; subst.
-  Case "s_app1".
-    apply IHeval. reflexivity. reflexivity. inversion eval.
-  Case "s_app2".
-    apply IHeval. reflexivity. reflexivity. inversion eval.
-  Case "s_appabs".
-    inversion H1.
-  Case "s_appfix".
-    inversion H1.
-Qed.
 
 
 Theorem progress : forall term tau n envs,
