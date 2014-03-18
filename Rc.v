@@ -41,25 +41,23 @@ with recordval : rec -> Prop :=
     recordval r ->
     recordval (rextend2 r i t).
 
-
 Inductive substx :=
 | substx_var : id -> tm -> substx
-| substx_rec1 : id -> rec -> substx. (* I think because of some bug in Coq I can't use name
-                                        substx_rec even though it's not defined in elsewhere *)
+| substx_record : id -> rec -> substx.
 
 
 Inductive subst : substx -> tm -> tm -> Prop :=
 | snat : forall x n, subst x (tnat n) (tnat n)
 | svar : forall i t, subst (substx_var i t) (tvar i) t
-| svar1 : forall a b r, subst (substx_rec1 a r) (tvar b) (tvar b)
+| svar1 : forall a b r, subst (substx_record a r) (tvar b) (tvar b)
 | svar2 : forall a b t, a <> b -> subst (substx_var a t) (tvar b) (tvar b)
 | sabs : forall x i t b b',
     x <> i ->
     subst (substx_var x t) b b' ->
     subst (substx_var x t) (tabs i b) (tabs i b')
 | sabs' : forall x i r b b',
-    subst (substx_rec1 x r) b b' ->
-    subst (substx_rec1 x r) (tabs i b) (tabs i b')
+    subst (substx_record x r) b b' ->
+    subst (substx_record x r) (tabs i b) (tabs i b')
 | sabs1 : forall x t b,
     subst (substx_var x t) (tabs x b) (tabs x b)
 | sapp : forall x t1 t2 t1' t2',
@@ -78,9 +76,9 @@ Inductive subst : substx -> tm -> tm -> Prop :=
     subst (substx_var x t) t2 t2' ->
     subst (substx_var x t) (tlet i t1 t2) (tlet i t1' t2')
 | slet' : forall x r i t1 t2 t1' t2',
-    subst (substx_rec1 x r) t1 t1' ->
-    subst (substx_rec1 x r) t2 t2' ->
-    subst (substx_rec1 x r) (tlet i t1 t2) (tlet i t1' t2')
+    subst (substx_record x r) t1 t1' ->
+    subst (substx_record x r) t2 t2' ->
+    subst (substx_record x r) (tlet i t1 t2) (tlet i t1' t2')
 | slet1 : forall i t t1 t2 t1',
     subst (substx_var i t) t1 t1' ->
     subst (substx_var i t) (tlet i t1 t2) (tlet i t1' t2)
@@ -88,12 +86,12 @@ Inductive subst : substx -> tm -> tm -> Prop :=
 with subst_rec : substx -> rec -> rec -> Prop :=
 | srec_empty : forall x, subst_rec x rempty rempty
 | srec_var : forall i r,
-    subst_rec (substx_rec1 i r) (rvar i) r
+    subst_rec (substx_record i r) (rvar i) r
 | srec_var' : forall a b t,
     subst_rec (substx_var a t) (rvar b) (rvar b)
 | srec_var'' : forall a b r,
     a <> b ->
-    subst_rec (substx_rec1 a r) (rvar b) (rvar b)
+    subst_rec (substx_record a r) (rvar b) (rvar b)
 | srec_extend : forall r i t x t',
     subst x t t' ->
     subst_rec x (rextend2 r i t) (rextend2 r i t').
