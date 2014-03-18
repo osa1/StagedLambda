@@ -99,3 +99,33 @@ with subst_rec : substx -> rec -> rec -> Prop :=
     subst_rec x (rextend2 r i t) (rextend2 r i t').
 
 
+Inductive access : rec -> id -> tm -> Prop :=
+| access1 : forall r i t i' t',
+    access r i t ->
+    access (rextend2 r i' t') i t
+| access2 : forall r i t,
+    access (rextend2 r i t) i t.
+
+
+Inductive step : tm -> tm -> Prop :=
+|  step_app1 : forall t1 t2 t1',
+    step t1 t1' ->
+    step (tapp t1 t2) (tapp t1' t2)
+| step_app2 : forall t1 t2 t2',
+    value t1 ->
+    step t2 t2' ->
+    step (tapp t1 t2) (tapp t1 t2')
+| step_appabs : forall i x t t',
+    subst (substx_var i x) t t' ->
+    step (tapp (tabs i t) x) t'
+| step_let1 : forall i t1 t2 t1',
+    step t1 t1' ->
+    step (tlet i t1 t2) (tlet i t1' t2)
+| step_let : forall i x t t',
+    value x ->
+    subst (substx_var i x) t t' ->
+    step (tlet i x t) t'
+| step_acc : forall r x t,
+    recordval r ->
+    access r x t ->
+    step (trec_select r x) t.
