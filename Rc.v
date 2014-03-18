@@ -127,3 +127,63 @@ Inductive step : tm -> tm -> Prop :=
     recordval r ->
     access r x t ->
     step (trec_select r x) t.
+
+
+Inductive ty :=
+| tynat : ty
+| tyarr : ty -> ty -> ty
+| tyrec : (id -> option ty) -> ty.
+
+
+Definition tyenv := id -> option ty.
+
+Definition empty_tyenv : tyenv := fun i => None.
+
+Definition extend_tyenv env i (t : ty) :=
+    fun i' => if eq_id_dec i' i then Some t else env i'.
+
+Definition recty := tyenv.
+
+
+Inductive has_ty : tyenv -> tm -> ty -> Prop :=
+| typenat : forall env n,
+    has_ty env (tnat n) tynat
+| typevar : forall env i ty,
+    env i = Some ty ->
+    has_ty env (tvar i) ty
+| typeabs : forall env x t ty1 ty2,
+    has_ty (extend_tyenv env x ty1) t ty2 ->
+    has_ty env (tabs x t) (tyarr ty1 ty2)
+| tyfix : forall env f x t ty1 ty2,
+    has_ty (extend_tyenv (extend_tyenv env x ty1) f (tyarr ty1 ty2)) t ty2 ->
+    has_ty env (tfix f x t) (tyarr ty1 ty2)
+| tyapp : forall env t1 t2 ty1 ty2,
+    has_ty env t1 (tyarr ty1 ty2) ->
+    has_ty env t2 ty1 ->
+    has_ty env (tapp t1 t2) ty2
+| tylet : forall env i x body ty1 ty2,
+    has_ty env x ty1 ->
+    has_ty (extend_tyenv env i ty1) body ty2 ->
+    has_ty env (tlet i x body) ty2
+| tyempty_rec : forall env,
+    has_ty env (trec rempty) (tyrec empty_tyenv)
+| tyupate_rec : forall env i ext ty r recty,
+    has_ty env ext ty ->
+    has_ty_rec env r recty ->
+    has_ty env (trec (rextend2 r i ext)) (tyrec (extend_tyenv recty i ty))
+| tyacc_rec : forall env rec recty i ty,
+    has_ty_rec env rec recty ->
+    recty i = Some ty ->
+    has_ty env (trec_select rec i) ty
+
+with has_ty_rec : tyenv -> rec -> recty -> Prop :=
+| has_ty_rec_empty : forall env,
+    has_ty_rec env rempty empty_tyenv
+| has_ty_rec_extend1 : forall env i var extty rec recty,
+    has_ty env (tvar var) extty ->
+    has_ty_rec env rec recty ->
+    has_ty_rec env (rextend1 rec i var) (extend_tyenv recty i extty)
+| has_ty_rec_extend2 : forall env i ext extty rec recty,
+    has_ty env ext extty ->
+    has_ty_rec env rec recty ->
+    has_ty_rec env (rextend2 rec i ext) (extend_tyenv recty i extty).
