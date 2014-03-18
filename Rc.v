@@ -128,6 +128,8 @@ Inductive step : tm -> tm -> Prop :=
     access r x t ->
     step (trec_select r x) t.
 
+Hint Constructors step.
+
 
 Inductive ty :=
 | tynat : ty
@@ -187,3 +189,33 @@ with has_ty_rec : tyenv -> rec -> recty -> Prop :=
     has_ty env ext extty ->
     has_ty_rec env rec recty ->
     has_ty_rec env (rextend2 rec i ext) (extend_tyenv recty i extty).
+
+
+Theorem progress : forall tm ty,
+    has_ty empty_tyenv tm ty ->
+    value tm \/ exists tm', step tm tm'.
+Proof.
+    intros tm. induction tm.
+    Case "tnat". intros. left. apply vnat.
+    Case "tnat". intros. inversion H. inversion H2.
+    Case "tabs". admit.
+    Case "tapp". intros. inversion H; subst. destruct IHtm1 with (ty := tyarr ty1 ty0); auto.
+      SCase "tm1 is value". destruct IHtm2 with (ty := ty1); auto.
+        SSCase "tm2 is value". (* tm1 should be a lambda or fix *) inversion H3; subst.
+          inversion H3. inversion H7.
+          (* show substitution *) admit.
+          (* same as appabs *) admit.
+          inversion H0.
+          inversion H0.
+          inversion H0.
+        SSCase "tm2 can take a step".
+          right. inversion H1. exists (tapp tm1 x); auto.
+      SCase "tm1 can take a step".
+        right. inversion H0. exists (tapp x tm2); auto.
+    Case "tfix". admit.
+    Case "trec". admit.
+    Case "trec_select". admit.
+    Case "tlet". intros. right. inversion H; subst. destruct IHtm1 with (ty := ty1); auto.
+      SCase "tm1 is value". (* again, need to show substitution *) admit.
+      SCase "tm1 can take a step". inversion H0. exists (tlet i x tm2). auto.
+Qed.
